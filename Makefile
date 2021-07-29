@@ -1,26 +1,47 @@
-bochs = bochs/bin
-out_dir = out
-kernel_dir= kernel
-lib_dir = lib
-disk_name = c.img
+BOCHS = bochs/bin
+OUT_DIR = out
+DISK_NAME = c.img
+CC=clang
+CFLAGS= -c -m32 -nostdlib -ffreestanding
+ASM=nasm
+ASMFLAGS= -f elf32
 
+CMP_DIRS=lib kernel
+SCH_DIRS = $(shell find $(CMP_DIRS) -maxdepth 9 -type d)
+OUT_CRT_DIRS+=$(foreach dir, $(SCH_DIRS), $(OUT_DIR)/$(dir) )
+SRCS_C += $(foreach dir, $(SCH_DIRS), $(wildcard $(dir)/*.c))
+SRCS_ASM += $(foreach dir, $(SCH_DIRS), $(wildcard $(dir)/*.asm))
+OBJS_C +=$(patsubst %.c, %.o, $(SRCS_C))
+OBJS_ASM +=$(patsubst %.asm, %.o, $(SRCS_ASM))
+OBJS_OUT_ALL+=$(foreach dir, $(OBJS_C), $(OUT_DIR)/$(dir) )
+OBJS_OUT_ALL+=$(foreach dir, $(OBJS_ASM), $(OUT_DIR)/$(dir) )
+all:$(OBJS_C)  $(OBJS_ASM)
 
-loader: boot.inc loader.asm mbr.asm
-	nasm mbr.asm -I ./include -o ${out_dir}/mbr.bin
-	nasm loader.asm -I ./include -o ${out_dir}/loader.bin
+loader: include/boot.inc loader.asm mbr.asm
+	nasm mbr.asm -I ./include -o ${OUT_DIR}/mbr.bin
+	nasm loader.asm -I ./include -o ${OUT_DIR}/loader.bin
 
-link:loader kernel lib
-	make kernel
-	make lib
-	ld.lld -Ttext 0xc0001500 -e main -o ${out_dir}/kernel.bin ${out_dir}/kernel/main.o ${out_dir}/lib/kernel/print.o
+make_out_dir:
+	mkdir -p ${OUT_DIR}
+	for x in $(OUT_CRT_DIRS); do \
+    	 mkdir -p $$x; \
+    done
 
-copy_to_disk: link
-	dd if=${out_dir}/mbr.bin of=${out_dir}/${disk_name} bs=512 count=1 conv=notrunc
-	dd if=${out_dir}/loader.bin of=${out_dir}/${disk_name} seek=2 bs=512 count=4 conv=notrunc
-	dd if=${out_dir}/kernel.bin of=${out_dir}/${disk_name} seek=9 bs=512 count=200 conv=notrunc
+$(OBJS_C):%.o : %.c make_out_dir
+	$(CC) $(CFLAGS) $< -o $(OUT_DIR)/$@
 
+$(OBJS_ASM):%.o : %.asm make_out_dir
+	$(ASM) $(ASMFLAGS) $< -o $(OUT_DIR)/$@
+
+link:$(OBJS_C) $(OBJS_ASM)
+	ld.lld -Ttext 0xc0001500 -e main -o $(OUT_DIR)/kernel.bin  ${OBJS_OUT_ALL}
+
+copy_to_disk: link loader
+	dd if=${OUT_DIR}/mbr.bin of=${OUT_DIR}/${DISK_NAME} bs=512 count=1 conv=notrunc
+	dd if=${OUT_DIR}/loader.bin of=${OUT_DIR}/${DISK_NAME} seek=2 bs=512 count=4 conv=notrunc
+	dd if=${OUT_DIR}/kernel.bin of=${OUT_DIR}/${DISK_NAME} seek=9 bs=512 count=200 conv=notrunc
 
 
 start:copy_to_disk
-	${bochs}/bochs
+	${BOCHS}/bochs
 

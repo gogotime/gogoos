@@ -1,3 +1,4 @@
+bits 16
 %include "boot.inc"
 [bits 16]
 LOADER_STACK_TOP equ LOADER_BASE_ADDR

@@ -3,10 +3,13 @@ RPL0 equ 0
 SELECTOR_VIDEO equ (0x0003<<3)+TI_GDT+RPL0
 
 [bits 32]
-section text
-global put_char
-put_char:
+section .text
+
+global put_char_asm
+
+put_char_asm:
     pushad
+    ;jmp $
     mov ax,SELECTOR_VIDEO
     mov gs,ax
 

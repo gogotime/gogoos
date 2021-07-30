@@ -28,7 +28,7 @@ DESC_DPL_3 equ                   11_0000000000000b
 DESC_S_CODE equ                    1_000000000000b
 DESC_S_DATA equ                    1_000000000000b
 DESC_S_SYS equ                     0_000000000000b
-DESC_TYPE_CODE equ                  1000_00000000b
+DESC_TYPE_CODE equ                  1010_00000000b
 DESC_TYPE_DATA equ                  0010_00000000b
 
 DESC_CODE_HIGH_4_BYTE equ  (0x00<<24) + DESC_G_4K + DESC_D_32 +DESC_L + DESC_AVL + DESC_LIMIT_CODE2 + DESC_P + DESC_DPL_0 + DESC_S_CODE + DESC_TYPE_CODE + 0x00

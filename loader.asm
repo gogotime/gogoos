@@ -111,6 +111,7 @@ p_mode_start:
     mov ds,ax
     mov es,ax
     mov ss,ax
+    mov fs,ax
     mov esp:LOADER_STACK_TOP
     mov ax,SELECTOR_VIDEO
     mov gs,ax
@@ -166,7 +167,7 @@ p_mode_start:
     mov byte [gs:321],0xA4
 
     ;jmp $
-    ;jmp SELECTOR_CODE:enter_kernel
+    jmp SELECTOR_CODE:enter_kernel
 
 enter_kernel:
     call kernel_init

@@ -1,5 +1,8 @@
 #ifndef LIB_KERNEL_PRINT_H
-#define LIB_KERNEL_PRINT_H \
-void put_char(char char_ascii);
-void put_string(char *string);
+#define LIB_KERNEL_PRINT_H
+#include "../stdint.h"
+#include "asm/put_char.h"
+void putString(char *string);
+void putUint32(uint32 val);
+void putUint32Hex(uint32 val);
 #endif

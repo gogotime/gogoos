@@ -1,13 +1,14 @@
 TI_GDT equ 0
 RPL0 equ 0
 SELECTOR_VIDEO equ (0x0003<<3)+TI_GDT+RPL0
+SELECTOR_DATA  equ (0x0002<<3)+TI_GDT+RPL0
 
 [bits 32]
 section .text
 
-global put_char_asm
+global putChar
 
-put_char_asm:
+putChar:
     pushad
     ;jmp $
     mov ax,SELECTOR_VIDEO
@@ -58,7 +59,7 @@ put_char_asm:
     shr bx,1
     inc bx
     cmp bx,2000
-    jl .set_cursor
+    jb .set_cursor
 
 .is_carriage_return:
 .is_line_feed:
@@ -70,20 +71,20 @@ put_char_asm:
     sub bx,dx
     add bx,80
     cmp bx,2000
-    jl .set_cursor
+    jb .set_cursor
 
 .roll_screen:
-    cld
     mov ecx,960
     mov esi,0xc00b80a0
     mov edi,0xc00b8000
+    cld
     rep movsd
 
-.clear_the_last_line:
     mov ebx,3840
-    mov ecx,80
-    mov word [gs:ebx],0x0720
-    add ebx,2
+    mov ecx,40
+.clear_the_last_line:
+    mov dword [gs:ebx],0x07200720
+    add ebx,4
     loop .clear_the_last_line
     mov ebx,1920
 

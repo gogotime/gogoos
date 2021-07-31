@@ -54,7 +54,7 @@ copy_to_disk: link loader
 
 
 start:copy_to_disk
-	${BOCHS}/bochs
+	${BOCHS}/bochs -q
 
 clean:
 	rm -rf $(OUT_DIR)

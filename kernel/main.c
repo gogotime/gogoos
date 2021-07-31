@@ -10,18 +10,11 @@ int _start(){
     mov ecx,3000
     mov edx,4000
     }
-    putString("hello world\n");
-//    putUint32(4294967295);
 
     putString("hello world\n");
-    int32 x=100000;
-    while (x--){
-        putUint32(x);
-        putChar('\n');
-    }
-//    putChar('\b');
-//    putString("\n");
-//    putUint32Hex(4294967295);
+
+
+    putUint32Hex(0xffffffff);
     __asm{
     mov eax,1000
     mov ebx,123124

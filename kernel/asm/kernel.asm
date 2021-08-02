@@ -4,39 +4,43 @@
     push 0
 %endmacro
 
-extern putString
-extern putUint32
+extern intrHandlerTable
 
 %macro VECTOR 2
 section .text
 intr%1Entry:
     %2
-; print interrupt number
-    push intrStr1
-    call putString
-    add esp,4
-    push %1
-    call putUint32
-    add esp,4
-    push intrStr2
-    call putString
-    add esp,4
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
 ; send EOI
     mov al,0x20
     out 0xa0,al
     out 0x20,al
-
-    add esp,4
-    iret
+    push %1
+    call [intrHandlerTable+%1*4]
+    jmp intr_exit
 
 section .data
     dd intr%1Entry
 
 %endmacro
+section .text
+intr_exit:
+    add esp,4
+    popad
+    pop gs
+    pop fs
+    pop es
+    pop ds
+
+    add esp,4
+    iret
 
 section .data
-intrStr1 db "interrupt ",0x0
-intrStr2 db " occur!",0xa,0x0
+
 global intrEntryTable
 intrEntryTable:
     VECTOR 0x00,PUSH_ZERO

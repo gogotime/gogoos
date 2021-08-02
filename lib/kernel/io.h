@@ -1,7 +1,3 @@
-//
-// Created by galamo on 2021/8/1.
-//
-
 #ifndef LIB_IO_H
 #define LIB_IO_H
 

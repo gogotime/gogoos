@@ -1,8 +1,10 @@
 #include "../lib/kernel/print.h"
 #include "../lib/kernel/io.h"
+#include "../lib/string.h"
 #include "../device/timer.h"
 #include "interrupt.h"
 #include "debug.h"
+
 void initAll() {
     putString("init all\n");
     idtInit();
@@ -10,16 +12,8 @@ void initAll() {
 }
 
 int main() {
-
     initAll();
-//    disableIntr();
-
-//    testPanic("asd");
-    ASSERT(0)
-//    asm volatile("cli");
-
+    disableIntr();
     while (1);
-
-
     return 0;
 }

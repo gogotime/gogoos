@@ -1,5 +1,5 @@
-#ifndef KERNEL_GLOBAL_H
-#define KERNEL_GLOBAL_H
+#ifndef __KERNEL_GLOBAL_H
+#define __KERNEL_GLOBAL_H
 
 #include "../lib/stdint.h"
 

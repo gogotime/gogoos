@@ -1,5 +1,5 @@
-#ifndef LIB_KERNEL_PRINT_H
-#define LIB_KERNEL_PRINT_H
+#ifndef __LIB_KERNEL_PRINT_H
+#define __LIB_KERNEL_PRINT_H
 #include "../stdint.h"
 #include "asm/put_char.h"
 void putString(char *string);

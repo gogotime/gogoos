@@ -1,5 +1,5 @@
-#ifndef KERNEL_DEBUG_H
-#define KERNEL_DEBUG_H
+#ifndef __KERNEL_DEBUG_H
+#define __KERNEL_DEBUG_H
 
 #include "../lib/stdint.h"
 

@@ -3,7 +3,7 @@ OUT_DIR = out
 DISK_PATH = c.img
 
 CC=clang
-CSFLAGS= -S -m32 -O3 -masm=intel -nostdlib -fno-builtin -ffreestanding -fasm-blocks -ffunction-sections -fdata-sections
+CSFLAGS= -S -m32 -O3 -masm=intel -nostdlib -fno-builtin -ffreestanding  -ffunction-sections -fdata-sections -mcmodel=kernel -mcmodel=large
 CCFLAGS= -c -m32 -O3 -masm=intel -nostdlib
 ASM=nasm
 ASMFLAGS= -f elf32
@@ -30,24 +30,24 @@ loader: include/boot.inc loader.asm mbr.asm
 	nasm loader.asm -I ./include -o ${OUT_DIR}/loader.bin
 
 make_out_dir:
-	mkdir -p ${OUT_DIR}
+	mkdir -p $(OUT_DIR)
 	for x in $(OUT_CRT_DIRS); do \
-    	 mkdir -p $$x; \
-    done
+		mkdir -p $$x; \
+	done
 
-$(OBJS_C):%.s : %.c make_out_dir
-	$(CC) $(CSFLAGS) $< -o $(OUT_DIR)/$@
+$(OBJS_C):%.s : %.c
+	$(CC) $(CSFLAGS) $^ -o $(OUT_DIR)/$@
 
 $(OBJS_S):%.o : %.s
-	$(CC) $(CCFLAGS) $(OUT_DIR)/$< -o $(OUT_DIR)/$@
+	$(CC) $(CCFLAGS) $(OUT_DIR)/$? -o $(OUT_DIR)/$@
 
-$(OBJS_ASM):%.o : %.asm make_out_dir
-	$(ASM) $(ASMFLAGS) $< -o $(OUT_DIR)/$@
+$(OBJS_ASM):%.o : %.asm
+	$(ASM) $(ASMFLAGS) $? -o $(OUT_DIR)/$@
 
 link:$(OBJS_S) $(OBJS_ASM)
-	ld.lld -m elf_i386   -Ttext 0xc0001500   --gc-sections   $(KERNEL_ENTRY_OBJ) ${OBJS_OUT_ALL} -o $(OUT_DIR)/kernel.bin
+	ld -m elf_i386   -Ttext 0xc0001500   --gc-sections -e main   $(KERNEL_ENTRY_OBJ) --start-group ${OBJS_OUT_ALL} --end-group -o $(OUT_DIR)/kernel.bin
 
-copy_to_disk: link loader
+copy_to_disk: link loader make_out_dir
 	dd if=${OUT_DIR}/mbr.bin of=${DISK_PATH} bs=512 count=1 conv=notrunc
 	dd if=${OUT_DIR}/loader.bin of=${DISK_PATH} seek=2 bs=512 count=4 conv=notrunc
 	dd if=${OUT_DIR}/kernel.bin of=${DISK_PATH} seek=9 bs=512 count=200 conv=notrunc

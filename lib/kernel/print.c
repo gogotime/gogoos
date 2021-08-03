@@ -1,10 +1,6 @@
 # include "asm/put_char.h"
 
-// void put_char(uint8 char_ascii){
-//    put_char0(char_ascii);
-//}
-
-void putString(char *string) {
+void putString(char* string) {
     while (*string) {
         putChar(*string);
         string++;

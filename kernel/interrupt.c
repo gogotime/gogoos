@@ -2,13 +2,16 @@
 #include "../lib/kernel/print.h"
 #include "global.h"
 #include "../lib/kernel/io.h"
-
+#include "interrupt.h"
 #define IDT_DESC_CNT 0x21
 
 #define PIC_M_CTRL 0x20
 #define PIC_M_DATA 0x21
 #define PIC_S_CTRL 0xa0
 #define PIC_S_DATA 0xa1
+
+#define EFLAGS_IF 0x00000200
+#define GET_EFLAGS(EFLAGS_VAR) asm volatile ("pushfl;popl %0":"=g"(EFLAGS_VAR))
 
 typedef struct {
     uint16 funcOffsetLowWord;
@@ -25,6 +28,24 @@ extern intrEntry intrEntryTable[IDT_DESC_CNT];
 char* intrName[IDT_DESC_CNT]; //no use
 intrHandler intrHandlerTable[IDT_DESC_CNT];
 static GateDesc idt[IDT_DESC_CNT];
+
+void enableIntr(){
+    asm volatile("sti");
+}
+
+void disableIntr(){
+    asm volatile("cli");
+}
+
+void setIntrStatus(enum IntrStatus status){
+    status?enableIntr():disableIntr();
+}
+
+enum IntrStatus getIntrStatus(){
+    uint32 eflags;
+    GET_EFLAGS(eflags);
+    return (EFLAGS_IF & eflags)?INTR_ON:INTR_OFF;
+}
 
 static void defaultIntrHandler(uint8 intrNr) {
     if (intrNr == 0x27 || intrNr == 0x2f) {

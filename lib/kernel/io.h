@@ -4,7 +4,7 @@
 #include "../stdint.h"
 
 static inline void outb(uint16 port, uint8 data) {
-    asm volatile("outb %b0,%w1"::"a"(data), "d"(port));
+    __asm__ __volatile__("outb %b0,%w1"::"a"(data), "d"(port));
 }
 
 static inline void outsw(uint16 port, const void *addr, uint32 wordCnt) {

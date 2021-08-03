@@ -1,18 +1,21 @@
 #include "../lib/kernel/print.h"
 #include "../lib/kernel/io.h"
-#include "interrupt.h"
 #include "../device/timer.h"
-
+#include "interrupt.h"
+#include "debug.h"
 void initAll() {
     putString("init all\n");
     idtInit();
     timerInit();
 }
 
-int _start() {
+int main() {
 
     initAll();
-    asm volatile("sti");
+//    disableIntr();
+
+//    testPanic("asd");
+    ASSERT(0)
 //    asm volatile("cli");
 
     while (1);

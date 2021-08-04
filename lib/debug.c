@@ -1,7 +1,7 @@
-#include "interrupt.h"
-#include "../lib/kernel/print.h"
+#include "kernel/interrupt.h"
+#include "kernel/print.h"
 
-void panicAndSpin1(const char* fileName, uint32 line, const char* funcName) {
+void panicAndSpin1(const char* fileName, uint32 line, const char* funcName, const char* condition) {
     disableIntr();
     putString((char*) fileName);
     putChar(':');
@@ -9,10 +9,8 @@ void panicAndSpin1(const char* fileName, uint32 line, const char* funcName) {
     putChar(':');
     putString((char*) funcName);
     putString(": panic: ");
-}
-
-void panicAndSpin2(const char* condition) {
     putString((char*) condition);
     putString("\n");
     while (1);
 }
+

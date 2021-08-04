@@ -1,7 +1,7 @@
-#include "../lib/stdint.h"
-#include "../lib/kernel/print.h"
-#include "global.h"
-#include "../lib/kernel/io.h"
+#include "../stdint.h"
+#include "print.h"
+#include "../global.h"
+#include "io.h"
 #include "interrupt.h"
 #define IDT_DESC_CNT 0x21
 
@@ -81,7 +81,7 @@ static void makeIdtDesc(GateDesc* gd, uint8 attr, intrEntry fn) {
     gd->funcOffsetHighWord = (uint16) (fn >> 16);
 }
 
-static void IdtDescInit(void) {
+static void idtDescInit(void) {
     for (int i = 0; i < IDT_DESC_CNT; i++) {
         makeIdtDesc(&idt[i], IDT_DESC_ATTR_DPL0, intrEntryTable[i]);
     }
@@ -108,7 +108,7 @@ static void picInit(void) {
 void idtInit() {
     putString("idt init start\n");
     exceptionInit();
-    IdtDescInit();
+    idtDescInit();
     picInit();
     uint64 idtOperand = ((sizeof(idt) - 1) | ((uint64) idt << 16));
     asm volatile ("lidt %0"::"m"(idtOperand));

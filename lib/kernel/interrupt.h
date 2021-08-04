@@ -1,5 +1,5 @@
-#ifndef __KERNEL_INTERRUPT_H
-#define __KERNEL_INTERRUPT_H
+#ifndef __LIB_KERNEL_INTERRUPT_H
+#define __LIB_KERNEL_INTERRUPT_H
 
 void idtInit();
 

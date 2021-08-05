@@ -3,7 +3,7 @@
 #include "../kernel/asm/put_char.h"
 
 void bitMapInit(BitMap* bm) {
-    memset(bm->start, 0, bm->length);
+    memset(bm->startAddr, 0, bm->length);
 }
 
 int8 bitMapTest(BitMap* bm, uint32 bitIdx) {
@@ -12,12 +12,12 @@ int8 bitMapTest(BitMap* bm, uint32 bitIdx) {
     }
     uint32 byteIdx = bitIdx / 8;
     bitIdx = bitIdx % 8;
-    return ((bm->start[byteIdx]) >> bitIdx) & 0x1;
+    return ((bm->startAddr[byteIdx]) >> bitIdx) & 0x1;
 }
 
-uint32 bitMapAlloc(BitMap* bm, uint32 cnt) {
+uint32 bitMapScan(BitMap* bm, uint32 cnt){
     uint32 byteIdx = 0;
-    while ((bm->start[byteIdx] == 0xff) && (byteIdx < bm->length)) {
+    while ((bm->startAddr[byteIdx] == 0xff) && (byteIdx < bm->length)) {
         byteIdx++;
     }
     if (byteIdx == bm->length) {
@@ -25,7 +25,7 @@ uint32 bitMapAlloc(BitMap* bm, uint32 cnt) {
     }
 
     uint32 bitIdx = 0;
-    while (((bm->start[byteIdx]) >> bitIdx) & 0x1) {
+    while (((bm->startAddr[byteIdx]) >> bitIdx) & 0x1) {
         bitIdx++;
     }
     uint32 bitIdxStart = 8 * byteIdx + bitIdx;
@@ -55,14 +55,14 @@ void bitMapSet(BitMap* bm, uint32 bitIdx, int8 val) {
     uint32 byteIdx = bitIdx / 8;
     bitIdx = bitIdx % 8;
     if (val) {
-        bm->start[byteIdx] |= (uint8) (0x1 << bitIdx);
+        bm->startAddr[byteIdx] |= (uint8) (0x1 << bitIdx);
     } else {
-        bm->start[byteIdx] &= (uint8) ~(0x1 << bitIdx);
+        bm->startAddr[byteIdx] &= (uint8) ~(0x1 << bitIdx);
     }
 }
 
-uint32 bitMapAllocAndSet(BitMap* bm, uint32 cnt, int8 val) {
-    uint32 bitIdxStart = bitMapAlloc(bm, cnt);
+uint32 bitMapScanAndSet(BitMap* bm, uint32 cnt, int8 val) {
+    uint32 bitIdxStart = bitMapScan(bm, cnt);
     if (bitIdxStart == -1) {
         return -1;
     }
@@ -79,7 +79,7 @@ void bitMapPrint(BitMap* bm) {
     while (byteIdx < bm->length) {
         uint8 bitIdx = 0;
         while (bitIdx < 8) {
-            putChar('0' + ((bm->start[byteIdx] >> bitIdx) & 0x1));
+            putChar('0' + ((bm->startAddr[byteIdx] >> bitIdx) & 0x1));
             bitIdx++;
         }
         putChar(' ');

@@ -7,6 +7,7 @@ section loader vstart=LOADER_BASE_ADDR
 
     jmp loader_start
     align   4
+    total_mem_bytes dd 0
     GDT_BASE:    dd 0x00000000
                  dd 0x00000000
     CODE_DESC:   dd 0x0000ffff
@@ -29,7 +30,7 @@ section loader vstart=LOADER_BASE_ADDR
             dd GDT_BASE
 
     align 4
-    total_mem_bytes dd 0
+
     ards_buf times 256 db 0
     ards_nr dw 0
 loader_start:

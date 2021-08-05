@@ -43,7 +43,7 @@ $(OBJS_ASM):%.o : %.asm $(make_out_dir)
 	$(ASM) $(ASMFLAGS) $? -o $(OUT_DIR)/$@
 
 link:$(OBJS_C) $(OBJS_ASM)
-	ld -m elf_i386   -Ttext 0xc0001500   --gc-sections -e main   $(KERNEL_ENTRY_OBJ) --start-group ${OBJS_OUT_ALL} --end-group -o $(OUT_DIR)/kernel.bin
+	ld.lld -m elf_i386   -Ttext 0xc0001500   --gc-sections -e main   $(KERNEL_ENTRY_OBJ) --start-group ${OBJS_OUT_ALL} --end-group -o $(OUT_DIR)/kernel.bin
 
 copy_to_disk: make_out_dir link loader
 	dd if=${OUT_DIR}/mbr.bin of=${DISK_PATH} bs=512 count=1 conv=notrunc

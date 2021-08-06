@@ -1,6 +1,7 @@
 # ifndef __KERNEL_MEMORY_H
 # define __KERNEL_MEMORY_H
 
+#include "../lib/structure/bitmap.h"
 
 typedef struct {
     BitMap bitMap;

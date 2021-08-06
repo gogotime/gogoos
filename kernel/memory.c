@@ -4,17 +4,8 @@
 #include "../lib/debug.h"
 #include "../lib/string.h"
 #include "memory.h"
+#include "global.h"
 
-#define PG_SIZE 4096 //4K
-#define MEM_BITMAP_BASE 0xc009a000
-
-#define K_HEAP_START 0xc0100000
-#define PAGE_DIR_TABLE_POS 0x00100000
-#define LOADER_BASE_ADDR 0x900
-#define MEMORY_DATA_ADDR 0x904
-
-#define PDE_IDX(addr) ((addr & 0xffc00000)>>22)
-#define PTE_IDX(addr) ((addr & 0x003ff000)>>12)
 
 RAddrPool kRAP, uRAP;
 VAddrPool kVAP, uVAP;

@@ -1,19 +1,20 @@
 #ifndef __LIB_KERNEL_INTERRUPT_H
 #define __LIB_KERNEL_INTERRUPT_H
 
-void idtInit();
+#include "../stdint.h"
 
-enum IntrStatus {
+typedef enum  {
     INTR_OFF,
     INTR_ON
-};
+}IntrStatus;
+
+void setIntrStatus(IntrStatus status);
+
+IntrStatus getIntrStatus();
 
 void enableIntr();
 
 void disableIntr();
 
-void setIntrStatus(enum IntrStatus status);
-
-enum IntrStatus getIntrStatus();
-
 #endif
+

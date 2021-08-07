@@ -1,9 +1,10 @@
 #include "../lib/stdint.h"
 #include "../lib/kernel/print.h"
-#include "global.h"
 #include "../lib/kernel/io.h"
+#include "../lib/debug.h"
+#include "global.h"
 #include "interrupt.h"
-
+#include "thread.h"
 
 #define IDT_DESC_CNT 0x21
 
@@ -21,34 +22,45 @@ typedef struct {
     uint16 funcOffsetHighWord;
 } GateDesc;
 
-typedef void* intrHandler;
-typedef uint32 intrEntry;
-extern intrEntry intrEntryTable[IDT_DESC_CNT];
+typedef void IntrHandler(uint8 intrNo);
+typedef uint32 IntrEntry;
+extern IntrEntry intrEntryTable[IDT_DESC_CNT];
 
-char* intrName[IDT_DESC_CNT]; //no use
-intrHandler intrHandlerTable[IDT_DESC_CNT];
+char* intrName[IDT_DESC_CNT];
+IntrHandler intrHandlerTable[IDT_DESC_CNT];
 static GateDesc idt[IDT_DESC_CNT];
 
-
-
-
+extern void setCursor(uint16 pos);
 
 static void defaultIntrHandler(uint8 intrNr) {
     if (intrNr == 0x27 || intrNr == 0x2f) {
         return;
     }
+    setCursor(0);
+    uint32 cursorPos = 0;
+    while (cursorPos < 320) {
+        putChar(' ');
+        cursorPos++;
+    }
+    setCursor(0);
+    putString("!!!!!!     exception message begin     !!!!!!\n");
+    setCursor(88);
     putString("int number : ");
     putUint32Hex(intrNr);
-    putChar('\n');
+    putString("\n");
+    putString(intrName[intrNr]);
+    if (intrNr == 14) {
+        uint32 pageFaultVaddr = 0;
+        asm("movl %%cr2,%0":"=r"(pageFaultVaddr));
+        putString("\nPage Fault Addr is:");
+        putUint32Hex(pageFaultVaddr);
+    }
+    putString("\n!!!!!!     exception message end       !!!!!!\n");
+    while (1);
 }
 
-static void intr0x20Handler(uint8 intrNr) {
-    static int a = 0;
-    putString("int number : ");
-    putUint32Hex(intrNr);
-    putChar(' ');
-    putUint32Hex(a++);
-    putChar('\n');
+void registerIntrHandler(uint8 intrNo,IntrHandler handler){
+    intrHandlerTable[intrNo] = handler;
 }
 
 static void exceptionInit(void) {
@@ -56,7 +68,27 @@ static void exceptionInit(void) {
         intrHandlerTable[i] = defaultIntrHandler;
         intrName[i] = "unknown";
     }
-    intrHandlerTable[0x20] = intr0x20Handler;
+    intrHandlerTable[0x20] = intrTimerHandler;
+    intrName[0] = "#DE Divide Error";
+    intrName[1] = "#DB Debug Exception";
+    intrName[2] = "NMI Interrupt";
+    intrName[3] = "#BP Breakpoint Exception";
+    intrName[4] = "#OF Overflow Exception";
+    intrName[5] = "#BR BOUND Range Exceeded Exception";
+    intrName[6] = "#UD Invalid Opcode Exception";
+    intrName[7] = "#NM Device Not Available Exception";
+    intrName[8] = "#DF Double Fault Exception";
+    intrName[9] = "Coprocessor Segment Overrun";
+    intrName[10] = "#TS Invalid TSS Exception";
+    intrName[11] = "#NP Segment Not Present";
+    intrName[12] = "#SS Stack Fault Exception";
+    intrName[13] = "#GP General Protection Exception";
+    intrName[14] = "#PF Page-Fault Exception";
+    intrName[15] = "Preserve";
+    intrName[16] = "#MF x87 FPU Floating-Point Error";
+    intrName[17] = "#AC Alignment Check Exception";
+    intrName[18] = "#MC Machine-Check Exception";
+    intrName[19] = "#XF SIMD Floating-Point Exception";
 }
 
 static void makeIdtDesc(GateDesc* gd, uint8 attr, intrEntry fn) {

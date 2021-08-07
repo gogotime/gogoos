@@ -5,6 +5,6 @@
 
 void idtInit();
 
-
+void registerIntrHandler(uint8 intrNo,IntrHandler handler)
 
 #endif

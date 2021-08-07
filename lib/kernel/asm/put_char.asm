@@ -6,8 +6,35 @@ SELECTOR_DATA  equ (0x0002<<3)+TI_GDT+RPL0
 
 
 section .text
-
+global setCursor
 global putChar
+
+setCursor:
+;set cursor location
+    ;set cursor location high
+    push eax
+    push ebx
+    push edx
+
+    mov word bx,[esp+16]
+    mov dx,0x3d4
+    mov al,0x0e
+    out dx,al
+    mov dx,0x3d5
+    mov al,bh
+    out dx,al
+    ;set cursor location low
+    mov dx,0x3d4
+    mov al,0x0f
+    out dx,al
+    mov dx,0x3d5
+    mov al,bl
+    out dx,al
+
+    pop edx
+    pop ebx
+    pop eax
+    ret
 
 putChar:
     pushad

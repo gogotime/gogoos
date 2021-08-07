@@ -1,5 +1,8 @@
 #include "../lib/kernel/io.h"
 #include "../lib/kernel/print.h"
+#include "../kernel/interrupt.h"
+#include "../lib/debug.h"
+#include "../kernel/thread.h"
 
 #define IRQ0_FREQUENCY 10
 #define INPUT_FREQUENCY 1193180
@@ -16,8 +19,29 @@ static void setFrequency(uint8 counterPort, uint8 counterNo, uint8 rwl, uint8 co
     outb(counterPort, (uint8) (counterValue >> 8));
 }
 
+uint32 ticks;
+
+static void intrTimerHandler(uint8 intrNr) {
+    TaskStruct* curThread = getCurrentThread();
+    ASSERT(curThread->stackMagicNum == STACK_MAGIC_NUMBER)
+    curThread->elapsedTicks++;
+    ticks++;
+    if (curThread->ticks == 0) {
+        schedule();
+    }else{
+        curThread->ticks--;
+    }
+    static int a = 0;
+    putString("int number : ");
+    putUint32Hex(intrNr);
+    putChar(' ');
+    putUint32Hex(a++);
+    putChar('\n');
+}
+
 void timerInit() {
     putString("timerInit start\n");
     setFrequency(COUNTER0_PORT, COUNTER0_NO, READ_WRITE_LATCH, COUNTER_MODE, COUNTER0_VALUE);
+    registerIntrHandler(0x20,intrTimerHandler);
     putString("timerInit done!\n");
 }

@@ -4,7 +4,7 @@
 #include "../lib/debug.h"
 #include "../kernel/thread.h"
 
-#define IRQ0_FREQUENCY 10
+#define IRQ0_FREQUENCY 100
 #define INPUT_FREQUENCY 1193180
 #define COUNTER0_VALUE (uint16)INPUT_FREQUENCY / IRQ0_FREQUENCY
 #define COUNTER0_PORT 0x40
@@ -31,12 +31,12 @@ static void intrTimerHandler(uint8 intrNr) {
     }else{
         curThread->ticks--;
     }
-    static int a = 0;
-    putString("int number : ");
-    putUint32Hex(intrNr);
-    putChar(' ');
-    putUint32Hex(a++);
-    putChar('\n');
+//    static int a = 0;
+//    putString("int number : ");
+//    putUint32Hex(intrNr);
+//    putChar(' ');
+//    putUint32Hex(a++);
+//    putChar('\n');
 }
 
 void timerInit() {

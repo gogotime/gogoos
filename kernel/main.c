@@ -1,5 +1,6 @@
 #include "../lib/kernel/print.h"
 #include "../lib/kernel/io.h"
+#include "../lib/kernel/interrupt.h"
 #include "../lib/string.h"
 #include "../lib/structure/bitmap.h"
 #include "../lib/debug.h"
@@ -14,6 +15,7 @@ void initAll() {
     idtInit();
     memInit();
     timerInit();
+    threadInit();
 //    enableIntr();
 }
 
@@ -22,7 +24,8 @@ void testThread(void* arg);
 int main() {
     initAll();
 //    disableIntr();
-    threadStart("ehads", 0, testThread,"hello");
+    threadStart("ehads", 4, testThread,"AAAA ");
+    threadStart("ehads", 1, testThread,"BBBB ");
 //    threadStart("ehads", 0);
 //    putUint32Hex(*getPdePtr(0xc0000000));
 //    putString("\n");
@@ -32,7 +35,10 @@ int main() {
 //    bitMapAllocAndSet(&bitmap, 2, 1);
 //    bitMapPrint(&bitmap);
 //    ASSERT(1 == 0)
-    while (1);
+    enableIntr();
+    while (1){
+        putString("Main ");
+    };
     return 0;
 }
 

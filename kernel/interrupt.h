@@ -1,10 +1,14 @@
-#ifndef __LIB_KERNEL_INTERRUPT_H
-#define __LIB_KERNEL_INTERRUPT_H
+#ifndef __KERNEL_INTERRUPT_H
+#define __KERNEL_INTERRUPT_H
 
-#include "../lib/kernel/interrupt.h"
+#include "../lib/stdint.h"
+
+typedef void (*IntrHandler)(uint8 intrNo);
 
 void idtInit();
 
-void registerIntrHandler(uint8 intrNo,IntrHandler handler)
+void registerIntrHandler(uint8 intrNo,IntrHandler handler);
+
+
 
 #endif

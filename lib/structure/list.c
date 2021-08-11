@@ -43,7 +43,6 @@ ListElem* listPop(List* list) {
     return elem;
 }
 
-void listIterate(List* list);
 
 bool listElemExist(List* list, ListElem* elem) {
     ListElem* e = list->head.next;

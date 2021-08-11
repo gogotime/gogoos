@@ -72,11 +72,13 @@ typedef struct {
 
 TaskStruct * getCurrentThread();
 
-void threadCreate(TaskStruct* pcb, ThreadFunc func, void* funcArg);
+void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg);
 
-void threadInit(TaskStruct* pcb, char* name, uint32 priority);
+void threadInit();
 
 TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg);
+
+void schedule();
 
 
 # endif

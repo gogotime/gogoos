@@ -5,17 +5,36 @@
 #include "global.h"
 #include "memory.h"
 
-TaskStruct * mainThread;
+TaskStruct* mainThread;
 List threadReadyList;
 List threadAllList;
 
-static ListElem * threadTag;
+static ListElem* threadTag;
 
-extern void switchTo(TaskStruct* cur,TaskStruct* next);
+extern void switchTo(TaskStruct* cur, TaskStruct* next);
 
-TaskStruct * getCurrentThread(){
+void schedule() {
+    ASSERT(getIntrStatus() == INTR_OFF)
+    TaskStruct* cur = getCurrentThread();
+    if (cur->status == TASK_RUNNING) {
+        ASSERT(!listElemExist(&threadReadyList, &cur->generalTag))
+        listAppend(&threadReadyList, &cur->generalTag);
+        cur->ticks = cur->priority;
+        cur->status = TASK_READY;
+    } else {
+
+    }
+    ASSERT(!listIsEmpty(&threadReadyList))
+    threadTag = NULL;
+    threadTag = listPop(&threadReadyList);
+    TaskStruct* next = elemToEntry(TaskStruct, generalTag, threadTag);
+    next->status = TASK_RUNNING;
+    switchTo(cur, next);
+}
+
+TaskStruct* getCurrentThread() {
     uint32 esp;
-    asm ("mov %%esp,%0",:"g"(esp));
+    asm ("mov %%esp,%0;":"=g"(esp));
     return (TaskStruct*) (esp & 0xfffff000);
 }
 
@@ -24,7 +43,18 @@ static void kernelThread(ThreadFunc func, void* funcArg) {
     func(funcArg);
 }
 
-void threadCreate(TaskStruct* pcb, ThreadFunc func, void* funcArg) {
+void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg) {
+    memset(pcb, 0, sizeof(*pcb));
+    strcpy(pcb->name, name);
+
+    pcb->status = TASK_READY;
+    pcb->selfKnlStack = (uint32*) ((uint32) pcb + PG_SIZE);
+    pcb->priority = priority;
+    pcb->ticks = priority;
+    pcb->elapsedTicks = 0;
+    pcb->pageDir = NULL;
+    pcb->stackMagicNum = STACK_MAGIC_NUMBER;
+
     pcb->selfKnlStack -= sizeof(IntrStack);
     pcb->selfKnlStack -= sizeof(ThreadStack);
     ThreadStack* kThreadStack = (ThreadStack*) pcb->selfKnlStack;
@@ -37,51 +67,41 @@ void threadCreate(TaskStruct* pcb, ThreadFunc func, void* funcArg) {
     kThreadStack->edi = 0;
 }
 
-void threadInit(TaskStruct* pcb, char* name, uint32 priority) {
-    memset(pcb, 0, sizeof(*pcb));
-    strcpy(pcb->name, name);
-
-    if (pcb == mainThread) {
-        pcb->status = TASK_RUNNING;
-    }else{
-        pcb->status = TASK_READY;
-    }
-    pcb->selfKnlStack = (uint32*) ((uint32) pcb + PG_SIZE);
-    pcb->priority = priority;
-    pcb->ticks = priority;
-    pcb->elapsedTicks = 0;
-    pcb->pageDir = NULL;
-    pcb->stackMagicNum = STACK_MAGIC_NUMBER;
-}
 
 TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg) {
     TaskStruct* pcb = getKernelPages(1);
-    putUint32Hex((uint32)pcb);
-    threadInit(pcb, name, priority);
-    threadCreate(pcb, function, funcArg);
-    ASSERT(!listElemExist(&threadReadyList,&pcb->generalTag))
+    putUint32Hex((uint32) pcb);
+    threadCreate(pcb, name, priority, function, funcArg);
+    ASSERT(!listElemExist(&threadReadyList, &pcb->generalTag))
     listAppend(&threadReadyList, &pcb->generalTag);
-    ASSERT(!listElemExist(&threadAllList,&pcb->allListTag))
+    ASSERT(!listElemExist(&threadAllList, &pcb->allListTag))
     listAppend(&threadAllList, &pcb->allListTag);
-    return pcb;
-    asm volatile(
-    "movl %0,%%esp;"
-    "pop %%ebp;"
-    "pop %%ebx;"
-    "pop %%edi;"
-    "pop %%esi;"
-    "ret;"
-    :
-    :"g"(pcb->selfKnlStack)
-    :"memory"
-    );
     return pcb;
 }
 
-static void makeMainThread(){
+static void makeMainThread() {
     mainThread = getCurrentThread();
-    threadInit(mainThread, "main", 31);
-    ASSERT(!listElemExist(&threadAllList,&pcb->allListTag))
-    listAppend(&threadAllList, &pcb->allListTag);
+    memset(mainThread, 0, sizeof(*mainThread));
+    strcpy(mainThread->name, "main");
+
+    mainThread->status = TASK_RUNNING;
+    mainThread->selfKnlStack = (uint32*) ((uint32) mainThread + PG_SIZE);
+    mainThread->priority = 4;
+    mainThread->ticks = 4;
+    mainThread->elapsedTicks = 0;
+    mainThread->pageDir = NULL;
+    mainThread->stackMagicNum = STACK_MAGIC_NUMBER;
+    ASSERT(!listElemExist(&threadAllList, &mainThread->allListTag))
+    listAppend(&threadAllList, &mainThread->allListTag);
 }
+
+void threadInit() {
+    putString("threadInit start\n");
+    listInit(&threadAllList);
+    listInit(&threadReadyList);
+    makeMainThread();
+    putString("threadInit done\n");
+}
+
+
 

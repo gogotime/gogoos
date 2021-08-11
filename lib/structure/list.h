@@ -4,9 +4,9 @@
 #include "../stdint.h"
 #include "../kernel/interrupt.h"
 
-#define offset(structType, member) (int32)(&((structType*)0)->member)
+#define offset(structType, member) (uint32)(&((structType*)0)->member)
 #define elemToEntry(structType, structMemberName, elemPtr) \
-        (structType*)((int32) elemPtr - offset(structType,structMemberName))
+        (structType*)((uint32) elemPtr - offset(structType,structMemberName))
 
 typedef struct listElem {
    struct listElem * prev;
@@ -18,16 +18,13 @@ typedef struct {
     ListElem tail;
 } List;
 
-typedef bool (TestElemFunc)(ListElem * elem, int
-arg);
+typedef bool (TestElemFunc)(ListElem * elem, int arg);
 
 void listInit(List* list);
 
 void listInsertBefore(ListElem * before, ListElem * elem);
 
 void listPush(List* list, ListElem* elem);
-
-void listIterate(List* list);
 
 void listAppend(List* list, ListElem* elem);
 
@@ -39,7 +36,7 @@ bool listIsEmpty(List* list);
 
 uint32 listLen(List* list);
 
-ListElem* listTraversal(List* list, function func, int arg);
+ListElem* listTraversal(List* list, TestElemFunc func, int arg);
 
 bool listElemExist(List* list, ListElem* elem);
 

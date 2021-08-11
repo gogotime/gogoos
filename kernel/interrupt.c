@@ -1,9 +1,10 @@
 #include "../lib/stdint.h"
 #include "../lib/kernel/print.h"
 #include "../lib/kernel/io.h"
+#include "../lib/kernel/interrupt.h"
 #include "../lib/debug.h"
-#include "global.h"
 #include "interrupt.h"
+#include "global.h"
 #include "thread.h"
 
 #define IDT_DESC_CNT 0x21
@@ -22,11 +23,13 @@ typedef struct {
     uint16 funcOffsetHighWord;
 } GateDesc;
 
-typedef void IntrHandler(uint8 intrNo);
+
+
 typedef uint32 IntrEntry;
 extern IntrEntry intrEntryTable[IDT_DESC_CNT];
 
 char* intrName[IDT_DESC_CNT];
+typedef void (*IntrHandler)(uint8 intrNo);
 IntrHandler intrHandlerTable[IDT_DESC_CNT];
 static GateDesc idt[IDT_DESC_CNT];
 
@@ -47,7 +50,7 @@ static void defaultIntrHandler(uint8 intrNr) {
     setCursor(88);
     putString("int number : ");
     putUint32Hex(intrNr);
-    putString("\n");
+    putString("\n        ");
     putString(intrName[intrNr]);
     if (intrNr == 14) {
         uint32 pageFaultVaddr = 0;
@@ -59,7 +62,7 @@ static void defaultIntrHandler(uint8 intrNr) {
     while (1);
 }
 
-void registerIntrHandler(uint8 intrNo,IntrHandler handler){
+void registerIntrHandler(uint8 intrNo, IntrHandler handler) {
     intrHandlerTable[intrNo] = handler;
 }
 
@@ -68,7 +71,6 @@ static void exceptionInit(void) {
         intrHandlerTable[i] = defaultIntrHandler;
         intrName[i] = "unknown";
     }
-    intrHandlerTable[0x20] = intrTimerHandler;
     intrName[0] = "#DE Divide Error";
     intrName[1] = "#DB Debug Exception";
     intrName[2] = "NMI Interrupt";
@@ -91,7 +93,7 @@ static void exceptionInit(void) {
     intrName[19] = "#XF SIMD Floating-Point Exception";
 }
 
-static void makeIdtDesc(GateDesc* gd, uint8 attr, intrEntry fn) {
+static void makeIdtDesc(GateDesc* gd, uint8 attr, IntrEntry fn) {
     gd->funcOffsetLowWord = (uint16) fn;
     gd->selector = SELECTOR_K_CODE;
     gd->dcount = 0;
@@ -122,7 +124,6 @@ static void picInit(void) {
     putString("pic init done!\n");
 }
 
-
 void idtInit() {
     putString("idt init start\n");
     exceptionInit();
@@ -131,5 +132,4 @@ void idtInit() {
     uint64 idtOperand = ((sizeof(idt) - 1) | ((uint64) idt << 16));
     asm volatile ("lidt %0"::"m"(idtOperand));
     putString("idt init done!\n");
-
 }

@@ -2,7 +2,7 @@
 #include "../lib/kernel/print.h"
 #include "../kernel/interrupt.h"
 #include "../lib/debug.h"
-#include "../kernel/thread.h"
+#include "../kernel/thread/thread.h"
 
 #define IRQ0_FREQUENCY 100
 #define INPUT_FREQUENCY 1193180

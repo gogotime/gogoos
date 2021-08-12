@@ -8,7 +8,7 @@
 
 #include "interrupt.h"
 #include "memory.h"
-#include "thread.h"
+#include "thread/thread.h"
 
 void initAll() {
     putString("init all\n");

@@ -1,9 +1,9 @@
-#include "../lib/string.h"
-#include "../lib/kernel/print.h"
-#include "../lib/debug.h"
+#include "../../lib/string.h"
+#include "../../lib/kernel/print.h"
+#include "../../lib/debug.h"
 #include "thread.h"
-#include "global.h"
-#include "memory.h"
+#include "../global.h"
+#include "../memory.h"
 
 TaskStruct* mainThread;
 List threadReadyList;
@@ -41,6 +41,7 @@ TaskStruct* getCurrentThread() {
 static void kernelThread(ThreadFunc func, void* funcArg) {
     enableIntr();
     func(funcArg);
+    putString("------------------------------");
 }
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg) {
@@ -77,6 +78,31 @@ TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* 
     ASSERT(!listElemExist(&threadAllList, &pcb->allListTag))
     listAppend(&threadAllList, &pcb->allListTag);
     return pcb;
+}
+
+void threadBlock(TaskStatus status) {
+    ASSERT((status == TASK_BLOCKED) || (status == TASK_HANGING) || (status == TASK_WAITING))
+    IntrStatus intrStatus = getIntrStatus();
+    disableIntr();
+    TaskStruct cur = getCurrentThread();
+    cur.status = status;
+    schedule();
+    setIntrStatus(intrStatus);
+}
+
+void threadUnblock(TaskStruct* pcb) {
+    ASSERT((pcb->status == TASK_BLOCKED) || (pcb->status == TASK_HANGING) || (pcb->status == TASK_WAITING))
+    IntrStatus intrStatus = getIntrStatus();
+    disableIntr();
+    if (pcb->status != TASK_READY) {
+        ASSERT(!listElemExist(&threadReadyList,&pcb->generalTag))
+        if (listElemExist(&threadReadyList,&pcb->generalTag)){
+            PANIC("threadUnblock: blocked thread in ready list")
+        }
+        pcb->status = TASK_READY;
+        listPush(&threadReadyList, &pcb->generalTag);
+    }
+    setIntrStatus(intrStatus);
 }
 
 static void makeMainThread() {

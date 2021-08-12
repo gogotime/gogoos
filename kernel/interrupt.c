@@ -5,7 +5,7 @@
 #include "../lib/debug.h"
 #include "interrupt.h"
 #include "global.h"
-#include "thread.h"
+#include "thread/thread.h"
 
 #define IDT_DESC_CNT 0x21
 

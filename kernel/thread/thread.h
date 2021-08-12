@@ -1,10 +1,11 @@
-# ifndef __KERNEL_THREAD_H
-# define __KERNEL_THREAD_H
+# ifndef __KERNEL_THREAD_THREAD_H
+# define __KERNEL_THREAD_THREAD_H
 
-#include "../lib/stdint.h"
-#include "../lib/structure/list.h"
+#include "../../lib/stdint.h"
+#include "../../lib/structure/list.h"
 
 #define STACK_MAGIC_NUMBER 0x20212021
+
 typedef void (ThreadFunc)(void*);
 
 typedef enum {
@@ -70,15 +71,18 @@ typedef struct {
     uint32 stackMagicNum;
 } TaskStruct;
 
-TaskStruct * getCurrentThread();
+TaskStruct* getCurrentThread();
+
+TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg);
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg);
 
 void threadInit();
 
-TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg);
-
 void schedule();
 
+void threadUnblock(TaskStruct* pcb);
+
+void threadBlock(TaskStatus status);
 
 # endif

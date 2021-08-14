@@ -18,5 +18,5 @@ void setIntrStatus(IntrStatus status) {
 IntrStatus getIntrStatus() {
     uint32 eflags;
     GET_EFLAGS(eflags);
-    return (eflags==EFLAGS_IF) ? INTR_ON : INTR_OFF;
+    return (eflags&EFLAGS_IF) ? INTR_ON : INTR_OFF;
 }

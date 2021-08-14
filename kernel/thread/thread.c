@@ -40,8 +40,8 @@ TaskStruct* getCurrentThread() {
 
 static void kernelThread(ThreadFunc func, void* funcArg) {
     enableIntr();
+//    putString("-------------------\n");
     func(funcArg);
-    putString("------------------------------");
 }
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg) {
@@ -84,8 +84,8 @@ void threadBlock(TaskStatus status) {
     ASSERT((status == TASK_BLOCKED) || (status == TASK_HANGING) || (status == TASK_WAITING))
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();
-    TaskStruct cur = getCurrentThread();
-    cur.status = status;
+    TaskStruct* cur = getCurrentThread();
+    cur->status = status;
     schedule();
     setIntrStatus(intrStatus);
 }

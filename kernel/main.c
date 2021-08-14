@@ -5,6 +5,8 @@
 #include "../lib/structure/bitmap.h"
 #include "../lib/debug.h"
 #include "../device/timer.h"
+#include "../device/console.h"
+#include "../device/keyboard.h"
 
 #include "interrupt.h"
 #include "memory.h"
@@ -16,7 +18,8 @@ void initAll() {
     memInit();
     timerInit();
     threadInit();
-//    enableIntr();
+    consoleInit();
+    keyBoardInit();
 }
 
 void testThread(void* arg);
@@ -24,20 +27,12 @@ void testThread(void* arg);
 int main() {
     initAll();
 //    disableIntr();
-    threadStart("ehads", 4, testThread,"AAAA ");
-    threadStart("ehads", 1, testThread,"BBBB ");
-//    threadStart("ehads", 0);
-//    putUint32Hex(*getPdePtr(0xc0000000));
-//    putString("\n");
-//    putUint32Hex(*getPdePtr(0x00000000));
-//    putString("\n");
-//    putUint32Hex(*getPtePtr(0xc0000000));
-//    bitMapAllocAndSet(&bitmap, 2, 1);
-//    bitMapPrint(&bitmap);
-//    ASSERT(1 == 0)
+//    threadStart("ehads", 4, testThread,"AAAA ");
+//    threadStart("ehads", 1, testThread,"BBBB ");
+
     enableIntr();
     while (1){
-        putString("Main ");
+//        consolePutString("Main ");
     };
     return 0;
 }
@@ -46,6 +41,9 @@ int main() {
 void testThread(void* arg) {
     char* str = (char*) arg;
     while(1){
-        putString(str);
+//        disableIntr();
+//        putString(str);
+//        enableIntr();
+        consolePutString(str);
     }
 }

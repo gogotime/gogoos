@@ -31,12 +31,6 @@ static void intrTimerHandler(uint8 intrNr) {
     }else{
         curThread->ticks--;
     }
-//    static int a = 0;
-//    putString("int number : ");
-//    putUint32Hex(intrNr);
-//    putChar(' ');
-//    putUint32Hex(a++);
-//    putChar('\n');
 }
 
 void timerInit() {

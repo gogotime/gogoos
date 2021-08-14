@@ -12,9 +12,21 @@ typedef struct {
 } Semaphore;
 
 typedef struct {
-    TaskStruct * holder;
+    TaskStruct* holder;
     Semaphore semaphore;
     uint32 holderRepeatTimes;
-}Lock;
+} Lock;
+
+void semaInit(Semaphore* sema, uint8 value);
+
+void lockInit(Lock* lock);
+
+void semaDown(Semaphore* sema);
+
+void semaUp(Semaphore* sema);
+
+void lockAcquire(Lock* lock);
+
+void lockRelease(Lock* lock);
 
 #endif

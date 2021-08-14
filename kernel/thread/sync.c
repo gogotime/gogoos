@@ -1,4 +1,5 @@
 #include "sync.h"
+#include "../../lib/kernel/print.h"
 
 void semaInit(Semaphore* sema, uint8 value) {
     sema->value = value;
@@ -16,11 +17,11 @@ void semaDown(Semaphore* sema) {
     disableIntr();
     TaskStruct* cur = getCurrentThread();
     while (sema->value == 0) {
-        ASSERT(!listElemExist(&sema->waiters, cur->generalTag))
+        ASSERT(!listElemExist(&sema->waiters, &cur->generalTag))
         if (listElemExist(&sema->waiters, &cur->generalTag)) {
             PANIC("semaphoreDown: blocked thread in waiters list")
         }
-        listAppend(&sema->waiters, cur->generalTag);
+        listAppend(&sema->waiters, &cur->generalTag);
         threadBlock(TASK_BLOCKED);
     }
     sema->value--;

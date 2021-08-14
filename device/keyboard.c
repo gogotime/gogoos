@@ -1,8 +1,9 @@
 #include "keyboard.h"
 #include "../lib/kernel/print.h"
 #include "../lib/kernel/io.h"
-#include "../kernel/interrupt.h"
 #include "../lib/stdint.h"
+#include "../lib/structure/ioqueue.h"
+#include "../kernel/interrupt.h"
 
 #define KBD_BUF_PORT 0x60
 
@@ -159,6 +160,7 @@ static char keymap[][2] = {
 };
 
 static bool ctrlStatus, shiftStatus, altStatus, capsLockStatus, extScanCode;
+IOQueue keyboardBuf;
 
 static void intrKeyBoardHandler(uint8 intrNr) {
     uint16 scanCode = inb(KBD_BUF_PORT);
@@ -204,23 +206,24 @@ static void intrKeyBoardHandler(uint8 intrNr) {
                     capsLockStatus = false;
                 }
                 break;
-            default:
-            {
+            default: {
                 bool shift = false;
                 if (shiftStatus) {
                     shift = !shift;
                 }
                 if (capsLockStatus) {
                     if (!(scanCode < 0x0e || scanCode == 0x29 || scanCode == 0x1a || scanCode == 0x1b ||
-                        scanCode == 0x2b || scanCode == 0x27 || scanCode == 0x28 || scanCode == 0x33 ||
-                        scanCode == 0x34 || scanCode == 0x35)) {
+                          scanCode == 0x2b || scanCode == 0x27 || scanCode == 0x28 || scanCode == 0x33 ||
+                          scanCode == 0x34 || scanCode == 0x35)) {
                         shift = !shift;
                     }
                 }
                 uint8 idx = (scanCode & 0x00ff);
                 char c = keymap[idx][shift];
                 if (c) {
-                    putChar(c);
+//                    putChar(c);
+                    ioQueuePutChar(&keyboardBuf, c);
+
                 }
             }
         }
@@ -230,6 +233,7 @@ static void intrKeyBoardHandler(uint8 intrNr) {
 
 void keyBoardInit() {
     putString("keyBoardInit start\n");
+    ioQueueInit(&keyboardBuf);
     registerIntrHandler(0x21, intrKeyBoardHandler);
     putString("keyBoardInit done\n");
 }

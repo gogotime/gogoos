@@ -122,7 +122,7 @@ static void picInit(void) {
 //    outb(PIC_M_DATA, 0xfe);
 //    outb(PIC_S_DATA, 0xff);
 
-    outb(PIC_M_DATA, 0xfd);
+    outb(PIC_M_DATA, 0xfc);
     outb(PIC_S_DATA, 0xff);
     putString("pic init done!\n");
 }

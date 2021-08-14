@@ -22,28 +22,43 @@ void initAll() {
     keyBoardInit();
 }
 
-void testThread(void* arg);
+void testThread1(void* arg);
+
+void testThread2(void* arg);
 
 int main() {
     initAll();
-//    disableIntr();
-//    threadStart("ehads", 4, testThread,"AAAA ");
-//    threadStart("ehads", 1, testThread,"BBBB ");
-
+    TaskStruct* t1 = threadStart("ehads", 4, testThread1, "AAAA ");
+    TaskStruct* t2 = threadStart("ehads", 4, testThread2, "BBBB ");
+    putString("TaskStruct Addr:");
+    putUint32Hex((uint32) getCurrentThread());
+    putString("\n");
+    putString("TaskStruct Addr:");
+    putUint32Hex((uint32) t1);
+    putString("\n");
+    putString("TaskStruct Addr:");
+    putUint32Hex((uint32) t2);
+    putString("\n");
     enableIntr();
-    while (1){
+    while (1) {
 //        consolePutString("Main ");
     };
     return 0;
 }
 
 
-void testThread(void* arg) {
-    char* str = (char*) arg;
-    while(1){
-//        disableIntr();
-//        putString(str);
-//        enableIntr();
-        consolePutString(str);
+void testThread1(void* arg) {
+    while (1) {
+        char c = ioQueueGetChar(&keyboardBuf);
+        consolePutUint32Hex(c);
+        consolePutString("\n");
+    }
+}
+
+void testThread2(void* arg) {
+    char i = 0;
+    while (1) {
+        ioQueuePutChar(&keyboardBuf, i);
+        i++;
     }
 }

@@ -40,7 +40,6 @@ TaskStruct* getCurrentThread() {
 
 static void kernelThread(ThreadFunc func, void* funcArg) {
     enableIntr();
-//    putString("-------------------\n");
     func(funcArg);
 }
 
@@ -71,7 +70,6 @@ void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func,
 
 TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg) {
     TaskStruct* pcb = getKernelPages(1);
-    putUint32Hex((uint32) pcb);
     threadCreate(pcb, name, priority, function, funcArg);
     ASSERT(!listElemExist(&threadReadyList, &pcb->generalTag))
     listAppend(&threadReadyList, &pcb->generalTag);
@@ -86,11 +84,23 @@ void threadBlock(TaskStatus status) {
     disableIntr();
     TaskStruct* cur = getCurrentThread();
     cur->status = status;
+    putString("Blocked TaskStruct Addr:");
+    putUint32Hex((uint32) cur);
+    putString("\n");
+    putString("Blocked TaskStruct Status:");
+    putUint32((uint32) cur->status);
+    putString("\n");
     schedule();
     setIntrStatus(intrStatus);
 }
 
 void threadUnblock(TaskStruct* pcb) {
+    putString("TaskStruct Addr:");
+    putUint32Hex((uint32) pcb);
+    putString("\n");
+    putString("TaskStruct Status:");
+    putUint32((uint32) pcb->status);
+    putString("\n");
     ASSERT((pcb->status == TASK_BLOCKED) || (pcb->status == TASK_HANGING) || (pcb->status == TASK_WAITING))
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();

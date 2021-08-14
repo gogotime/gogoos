@@ -11,26 +11,26 @@ void consoleInit() {
 }
 
 void consolePutString(char* string) {
-    lockAcquire(&consoleLock);
+    lockLock(&consoleLock);
     putString(string);
-    lockRelease(&consoleLock);
+    lockUnlock(&consoleLock);
 }
 
 void consolePutUint32(uint32 val) {
-    lockAcquire(&consoleLock);
+    lockLock(&consoleLock);
     putUint32(val);
-    lockRelease(&consoleLock);
+    lockUnlock(&consoleLock);
 }
 
 void consolePutUint32Hex(uint32 val) {
-    lockAcquire(&consoleLock);
+    lockLock(&consoleLock);
     putUint32Hex(val);
-    lockRelease(&consoleLock);
+    lockUnlock(&consoleLock);
 }
 
 
 void consolePutChar(char c) {
-    lockAcquire(&consoleLock);
+    lockLock(&consoleLock);
     putChar(c);
-    lockRelease(&consoleLock);
+    lockUnlock(&consoleLock);
 }

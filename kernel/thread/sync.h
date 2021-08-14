@@ -8,13 +8,14 @@
 
 typedef struct {
     uint8 value;
-    List waiters;
+    List blockedList;
 } Semaphore;
 
 typedef struct {
     TaskStruct* holder;
     Semaphore semaphore;
     uint32 holderRepeatTimes;
+    List waitingList;
 } Lock;
 
 void semaInit(Semaphore* sema, uint8 value);
@@ -25,8 +26,14 @@ void semaDown(Semaphore* sema);
 
 void semaUp(Semaphore* sema);
 
-void lockAcquire(Lock* lock);
+void lockLock(Lock* lock);
 
-void lockRelease(Lock* lock);
+void lockUnlock(Lock* lock);
+
+void lockWait(Lock* lock);
+
+void lockNotify(Lock* lock);
+
+void lockNotifyAll(Lock* lock);
 
 #endif

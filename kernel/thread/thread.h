@@ -66,6 +66,7 @@ typedef struct {
     uint32 ticks;
     uint32 elapsedTicks;
     ListElem generalTag;
+    ListElem lockTag;
     ListElem allListTag;
     uint32* pageDir;
     uint32 stackMagicNum;

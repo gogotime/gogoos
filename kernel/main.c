@@ -29,7 +29,8 @@ void testThread2(void* arg);
 int main() {
     initAll();
     TaskStruct* t1 = threadStart("ehads", 4, testThread1, "AAAA ");
-    TaskStruct* t2 = threadStart("ehads", 4, testThread2, "BBBB ");
+    TaskStruct* t2 = threadStart("ehads", 4, testThread2, "B ");
+    TaskStruct* t3 = threadStart("ehads", 4, testThread2, "C ");
     putString("TaskStruct Addr:");
     putUint32Hex((uint32) getCurrentThread());
     putString("\n");
@@ -50,15 +51,14 @@ int main() {
 void testThread1(void* arg) {
     while (1) {
         char c = ioQueueGetChar(&keyboardBuf);
-        consolePutUint32Hex(c);
+        consolePutChar(c);
         consolePutString("\n");
     }
 }
 
 void testThread2(void* arg) {
-    char i = 0;
+    char* c = (char*) arg;
     while (1) {
-        ioQueuePutChar(&keyboardBuf, i);
-        i++;
+        ioQueuePutChar(&keyboardBuf, *c);
     }
 }

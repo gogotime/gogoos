@@ -13,6 +13,17 @@ static ListElem* threadTag;
 
 extern void switchTo(TaskStruct* cur, TaskStruct* next);
 
+TaskStruct* getCurrentThread() {
+    uint32 esp;
+    asm ("mov %%esp,%0;":"=g"(esp));
+    return (TaskStruct*) (esp & 0xfffff000);
+}
+
+static void kernelThread(ThreadFunc func, void* funcArg) {
+    enableIntr();
+    func(funcArg);
+}
+
 void schedule() {
     ASSERT(getIntrStatus() == INTR_OFF)
     TaskStruct* cur = getCurrentThread();
@@ -29,19 +40,13 @@ void schedule() {
     threadTag = listPop(&threadReadyList);
     TaskStruct* next = elemToEntry(TaskStruct, generalTag, threadTag);
     next->status = TASK_RUNNING;
+    putString("switch to:");
+    putUint32Hex((uint32) next);
+    putString("\n");
     switchTo(cur, next);
 }
 
-TaskStruct* getCurrentThread() {
-    uint32 esp;
-    asm ("mov %%esp,%0;":"=g"(esp));
-    return (TaskStruct*) (esp & 0xfffff000);
-}
 
-static void kernelThread(ThreadFunc func, void* funcArg) {
-    enableIntr();
-    func(funcArg);
-}
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg) {
     memset(pcb, 0, sizeof(*pcb));
@@ -82,25 +87,17 @@ void threadBlock(TaskStatus status) {
     ASSERT((status == TASK_BLOCKED) || (status == TASK_HANGING) || (status == TASK_WAITING))
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();
+
     TaskStruct* cur = getCurrentThread();
+    ASSERT(!listElemExist(&threadReadyList,&cur->generalTag))
     cur->status = status;
-    putString("Blocked TaskStruct Addr:");
-    putUint32Hex((uint32) cur);
-    putString("\n");
-    putString("Blocked TaskStruct Status:");
-    putUint32((uint32) cur->status);
-    putString("\n");
     schedule();
+
     setIntrStatus(intrStatus);
 }
 
 void threadUnblock(TaskStruct* pcb) {
-    putString("TaskStruct Addr:");
-    putUint32Hex((uint32) pcb);
-    putString("\n");
-    putString("TaskStruct Status:");
-    putUint32((uint32) pcb->status);
-    putString("\n");
+    ASSERT(!listElemExist(&threadReadyList,&pcb->generalTag))
     ASSERT((pcb->status == TASK_BLOCKED) || (pcb->status == TASK_HANGING) || (pcb->status == TASK_WAITING))
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();

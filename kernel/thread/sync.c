@@ -4,12 +4,12 @@
 void semaInit(Semaphore* sema, uint8 value) {
     sema->value = value;
     listInit(&sema->blockedList);
+    listInit(&sema->waitingList);
 }
 
 void lockInit(Lock* lock) {
     lock->holder = NULL;
     lock->holderRepeatTimes = 0;
-    listInit(&lock->waitingList);
     semaInit(&lock->semaphore, 1);
 }
 
@@ -18,11 +18,11 @@ void semaDown(Semaphore* sema) {
     disableIntr();
     TaskStruct* cur = getCurrentThread();
     while (sema->value == 0) {
-        ASSERT(!listElemExist(&sema->blockedList, &cur->generalTag))
-        if (listElemExist(&sema->blockedList, &cur->generalTag)) {
+        ASSERT(!listElemExist(&sema->blockedList, &cur->lockTag))
+        if (listElemExist(&sema->blockedList, &cur->lockTag)) {
             PANIC("semaphoreDown: thread already in blocked list")
         }
-        listAppend(&sema->blockedList, &cur->generalTag);
+        listAppend(&sema->blockedList, &cur->lockTag);
         threadBlock(TASK_BLOCKED);
     }
     sema->value--;
@@ -35,10 +35,12 @@ void semaUp(Semaphore* sema) {
     disableIntr();
     ASSERT(sema->value == 0)
     List* list = &sema->blockedList;
-    if (!listIsEmpty(list)) {
-        TaskStruct* thread = elemToEntry(TaskStruct, generalTag, listPop(list));
-        putString("semaUp\n");
-        threadUnblock(thread);
+    while (!listIsEmpty(list)) {
+        TaskStruct* thread = elemToEntry(TaskStruct, lockTag, listPop(list));
+        if (thread->status == TASK_BLOCKED) {
+            threadUnblock(thread);
+            break;
+        }
     }
     sema->value++;
     ASSERT(sema->value == 1)
@@ -69,38 +71,52 @@ void lockUnlock(Lock* lock) {
 }
 
 void lockWait(Lock* lock) {
+    IntrStatus intrStatus = getIntrStatus();
+    disableIntr();
+
     TaskStruct* cur = getCurrentThread();
     if (lock->holder != cur) {
         PANIC("lockWait:holder isn't current thread")
     }
-    ASSERT(!listElemExist(&lock->waitingList, &cur->generalTag))
-    if (listElemExist(&lock->waitingList, &cur->generalTag)) {
+    ASSERT(!listElemExist(&lock->semaphore.waitingList, &cur->lockTag))
+    if (listElemExist(&lock->semaphore.waitingList, &cur->lockTag)) {
         PANIC("lockWait: thread already in waiting list")
     }
-    listAppend(&lock->waitingList, &cur->generalTag);
+    ASSERT(!listElemExist(&lock->semaphore.blockedList, &cur->lockTag))
+    listAppend(&lock->semaphore.waitingList, &cur->lockTag);
     lockUnlock(lock);
     threadBlock(TASK_WAITING);
+
+    setIntrStatus(intrStatus);
+
     lockLock(lock);
 }
 
 void lockNotify(Lock* lock) {
+    TaskStruct* cur = getCurrentThread();
+    if (lock->holder != cur) {
+        PANIC("lockNotify:holder isn't current thread")
+    }
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();
-    List* list = &lock->waitingList;
+    List* list = &lock->semaphore.waitingList;
     if (!listIsEmpty(list)) {
-        TaskStruct* thread = elemToEntry(TaskStruct, generalTag, listPop(list));
+        TaskStruct* thread = elemToEntry(TaskStruct, lockTag, listPop(list));
         threadUnblock(thread);
     }
     setIntrStatus(intrStatus);
 }
 
 void lockNotifyAll(Lock* lock) {
+    TaskStruct* cur = getCurrentThread();
+    if (lock->holder != cur) {
+        PANIC("lockNotifyAll:holder isn't current thread")
+    }
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();
-    List* list = &lock->waitingList;
+    List* list = &lock->semaphore.waitingList;
     while (!listIsEmpty(list)) {
-        TaskStruct* thread = elemToEntry(TaskStruct, generalTag, listPop(list));
-        putString("lockNotifyAll\n");
+        TaskStruct* thread = elemToEntry(TaskStruct, lockTag, listPop(list));
         threadUnblock(thread);
     }
     setIntrStatus(intrStatus);

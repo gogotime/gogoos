@@ -26,21 +26,25 @@ void testThread1(void* arg);
 
 void testThread2(void* arg);
 
+typedef struct {
+    uint16 limit;
+    uint32 base;
+} GDTR;
+
 int main() {
     initAll();
-    TaskStruct* t1 = threadStart("ehads", 4, testThread1, "AAAA ");
-    TaskStruct* t2 = threadStart("ehads", 4, testThread2, "B ");
-    TaskStruct* t3 = threadStart("ehads", 4, testThread2, "C ");
-    putString("TaskStruct Addr:");
-    putUint32Hex((uint32) getCurrentThread());
-    putString("\n");
-    putString("TaskStruct Addr:");
-    putUint32Hex((uint32) t1);
-    putString("\n");
-    putString("TaskStruct Addr:");
-    putUint32Hex((uint32) t2);
-    putString("\n");
-    enableIntr();
+    GDTR gdtr;
+    asm ("sgdt %0;"
+    :"=m"(gdtr));
+    putUint32(gdtr.limit);
+    putChar('\n');
+    putUint32Hex(gdtr.base);
+    putChar('\n');
+    putUint32Hex(gdtr.base);
+    putChar('\n');
+    putUint32Hex(*(uint32*) 0x904);
+    putChar('\n');
+//    enableIntr();
     while (1) {
 //        consolePutString("Main ");
     };

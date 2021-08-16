@@ -35,6 +35,8 @@ static void memPoolInit(uint32 allMem) {
     kRAP.bitMap.startAddr = (uint8*) MEM_BITMAP_BASE;
     uRAP.bitMap.startAddr = (uint8*) (MEM_BITMAP_BASE + kbmLength);
 
+    lockInit(&kRAP.lock);
+    lockInit(&uRAP.lock);
     putString("kernelRAddrPool.bitMap.start=");
     putUint32Hex((uint32) kRAP.bitMap.startAddr);
     putString("\n");
@@ -47,7 +49,6 @@ static void memPoolInit(uint32 allMem) {
     putString("userRAddrPool.startAddr=");
     putUint32Hex(uRAP.startAddr);
     putString("\n");
-//    while (1);
 
     bitMapInit(&kRAP.bitMap);
     bitMapInit(&uRAP.bitMap);
@@ -97,8 +98,8 @@ static void* palloc(RAddrPool* pool) {
         return NULL;
     }
     bitMapSet(&pool->bitMap, bitIdx, 1);
-    uint32 pagePhyAddr = ((bitIdx * PG_SIZE) + pool->startAddr);
-    return (void*) pagePhyAddr;
+    uint32 pageRaddr = ((bitIdx * PG_SIZE) + pool->startAddr);
+    return (void*) pageRaddr;
 }
 
 static void mapPageTable(void* vaddr, void* paddr) {
@@ -113,8 +114,8 @@ static void mapPageTable(void* vaddr, void* paddr) {
             PANIC("pte repeat")
         }
     } else {
-        uint32 pdePhyAddr = (uint32) palloc(&kRAP);
-        *pde = (pdePhyAddr | PG_US_U | PG_RW_W | PG_P_1);
+        uint32 pageRaddr = (uint32) palloc(&kRAP);
+        *pde = (pageRaddr | PG_US_U | PG_RW_W | PG_P_1);
         memset((void*) ((uint32) pte & 0xfffff000), 0, PG_SIZE);
         *pte = (pa | PG_US_U | PG_RW_W | PG_P_1);
     }
@@ -164,14 +165,37 @@ void* getUserPages(uint32 pageCnt) {
 
 void* getOnePage(PoolFlag pf, uint32 vaddr) {
     RAddrPool* rpool = pf == PF_KERNEL ? &kRAP : &uRAP;
-    lockLock(rpool->lock);
-
-    void* vaddr = mallocPage(PF_USER, pageCnt);
-    if (vaddr != NULL) {
-        memset(vaddr, 0, pageCnt * PG_SIZE);
+    lockLock(&rpool->lock);
+    int32 bitIdx = -1;
+    TaskStruct* cur = getCurrentThread();
+    if (pf == PF_USER && cur->pageDir != NULL) {
+        bitIdx = (vaddr - cur->vap.startAddr) / PG_SIZE;
+        ASSERT(bitIdx >= 0)
+        bitMapSet(&cur->vap.bitMap, bitIdx, 1);
+    } else if (pf == PF_KERNEL && cur->pageDir == NULL) {
+        bitIdx = (vaddr - kVAP.startAddr) / PG_SIZE;
+        ASSERT(bitIdx >= 0)
+        bitMapSet(&kVAP.bitMap, bitIdx, 1);
+    } else {
+        putString("\n");
+        putString("PoolFlag:");
+        putUint32(pf);
+        putString("\ncur->pageDir:");
+        putUint32Hex((uint32) cur->pageDir);
+        PANIC("PoolFlag and Vaddr not matched\n")
     }
-    lockUnlock(rpool->lock);
-    return vaddr;
+    void* raddr = palloc(rpool);
+    if (raddr == NULL) {
+        return NULL;
+    }
+    mapPageTable((void*) vaddr, raddr);
+    lockUnlock(&rpool->lock);
+    return (void*) vaddr;
+}
+
+uint32 addrV2P(uint32 vaddr) {
+    uint32* pte = getPtePtr(vaddr);
+    return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
 }
 
 void memInit() {

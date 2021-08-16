@@ -3,6 +3,8 @@
 
 #include "../lib/stdint.h"
 
+// ---------- SYSTEM ----------
+
 #define PG_SIZE 4096
 #define MEM_BITMAP_BASE 0xc009a000
 
@@ -10,6 +12,18 @@
 #define PAGE_DIR_TABLE_POS 0x00100000
 #define LOADER_BASE_ADDR 0x900
 #define MEMORY_DATA_ADDR 0x904
+
+// ---------- EFLAGS ----------
+
+#define EFLAGS_MBS (1<<1)
+#define EFLAGS_IF_1 (1<<9)
+#define EFLAGS_IF_0 (0<<9)
+#define EFLAGS_IOPL_3 (3<<12)
+#define EFLAGS_IOPL_0 (0<<12)
+#define EFLAGS_IF_0 (0<<9)
+
+
+// ---------- PDE PTE ----------
 
 #define PDE_IDX(addr) ((addr & 0xffc00000)>>22)
 #define PTE_IDX(addr) ((addr & 0x003ff000)>>12)

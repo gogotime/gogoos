@@ -11,7 +11,7 @@
 #include "interrupt.h"
 #include "memory.h"
 #include "thread/thread.h"
-#include "tss.h"
+#include "user/tss.h"
 void initAll() {
     putString("init all\n");
     idtInit();

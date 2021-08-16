@@ -27,7 +27,9 @@ section .data
     dd intr%1Entry
 
 %endmacro
+global intrExit
 section .text
+intrExit:
 intr_exit:
     add esp,4
     popad

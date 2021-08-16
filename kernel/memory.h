@@ -36,4 +36,9 @@ void* mallocPage(PoolFlag pf, uint32 pageCnt);
 
 void* getKernelPages(uint32 pageCnt);
 
+void* getUserPages(uint32 pageCnt);
+
+void* getOnePage(PoolFlag pf, uint32 vaddr);
+
+uint32 addrV2P(uint32 vaddr);
 # endif

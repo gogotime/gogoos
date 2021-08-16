@@ -2,11 +2,10 @@
 #define __KERNEL_TSS_H
 
 #include "../lib/stdint.h"
+#include "thread/thread.h"
 
-typedef void (*IntrHandler)(uint8 intrNo);
+void updateTSSEsp(TaskStruct* ts);
 
-void idtInit();
-
-void registerIntrHandler(uint8 intrNo,IntrHandler handler);
+void tssInit();
 
 #endif

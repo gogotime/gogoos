@@ -1,23 +1,22 @@
 # ifndef __KERNEL_MEMORY_H
 # define __KERNEL_MEMORY_H
 
-#include "../lib/structure/bitmap.h"
 
+#include "thread/sync.h"
+#include "thread/thread.h"
+#include "../lib/structure/bitmap.h"
 typedef struct {
     BitMap bitMap;
     uint32 startAddr;
     uint32 size;
+    Lock lock;
 } RAddrPool;
 
-typedef struct {
-    BitMap bitMap;
-    uint32 startAddr;
-} VAddrPool;
 
-enum PoolFlag {
+typedef enum  {
     PF_USER,
     PF_KERNEL
-};
+}PoolFlag;
 
 #define PG_P_1 1  //present
 #define PG_P_0 0  //not present
@@ -33,8 +32,7 @@ uint32* getPtePtr(uint32 vaddr);
 
 uint32* getPdePtr(uint32 vaddr);
 
-
-void* mallocPage(enum PoolFlag pf, uint32 pageCnt);
+void* mallocPage(PoolFlag pf, uint32 pageCnt);
 
 void* getKernelPages(uint32 pageCnt);
 

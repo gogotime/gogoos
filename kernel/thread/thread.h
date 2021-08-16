@@ -3,8 +3,16 @@
 
 #include "../../lib/stdint.h"
 #include "../../lib/structure/list.h"
+#include "../../lib/structure/bitmap.h"
+
 
 #define STACK_MAGIC_NUMBER 0x20212021
+
+
+typedef struct {
+    BitMap bitMap;
+    uint32 startAddr;
+} VAddrPool;
 
 typedef void (ThreadFunc)(void*);
 
@@ -69,8 +77,21 @@ typedef struct {
     ListElem lockTag;
     ListElem allListTag;
     uint32* pageDir;
+    VAddrPool vap;
     uint32 stackMagicNum;
 } TaskStruct;
+
+typedef struct {
+    uint8 value;
+    List blockedList;
+    List waitingList;
+} Semaphore;
+
+typedef struct {
+    TaskStruct* holder;
+    Semaphore semaphore;
+    uint32 holderRepeatTimes;
+} Lock;
 
 TaskStruct* getCurrentThread();
 

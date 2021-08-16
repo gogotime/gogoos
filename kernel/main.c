@@ -11,7 +11,7 @@
 #include "interrupt.h"
 #include "memory.h"
 #include "thread/thread.h"
-
+#include "tss.h"
 void initAll() {
     putString("init all\n");
     idtInit();
@@ -20,6 +20,7 @@ void initAll() {
     threadInit();
     consoleInit();
     keyBoardInit();
+    tssInit();
 }
 
 void testThread1(void* arg);
@@ -33,17 +34,6 @@ typedef struct {
 
 int main() {
     initAll();
-    GDTR gdtr;
-    asm ("sgdt %0;"
-    :"=m"(gdtr));
-    putUint32(gdtr.limit);
-    putChar('\n');
-    putUint32Hex(gdtr.base);
-    putChar('\n');
-    putUint32Hex(gdtr.base);
-    putChar('\n');
-    putUint32Hex(*(uint32*) 0x904);
-    putChar('\n');
 //    enableIntr();
     while (1) {
 //        consolePutString("Main ");

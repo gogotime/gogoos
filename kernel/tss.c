@@ -1,6 +1,8 @@
 #include "tss.h"
 #include "global.h"
 #include "thread/thread.h"
+#include "../lib/kernel/print.h"
+#include "../lib/string.h"
 
 typedef struct {
     uint16 limitLowWord;
@@ -62,5 +64,19 @@ static GDTDesc makeGDTDesc(uint32 base, uint32 limit, uint8 attrLow, uint8 attrH
 }
 
 void tssInit() {
-
+    putString("tssInit start");
+    uint32 tssSize = sizeof(tss);
+    putString("tss size:");
+    putUint32(tssSize);
+    putString("\n");
+    memset(&tss, 0, tssSize);
+    tss.ss0 = SELECTOR_K_STACK;
+    tss.ioBase = tssSize;
+    *((GDTDesc*) 0xc0000928) = makeGDTDesc((uint32) &tss, tssSize, TSS_ATTR_LOW, TSS_ATTR_HIGH);
+    *((GDTDesc*) 0xc0000930) = makeGDTDesc(0, 0xfffff, GDT_ATTR_LOW_CODE_DPL3, GDT_ATTR_HIGH);
+    *((GDTDesc*) 0xc0000938) = makeGDTDesc(0, 0xfffff, GDT_ATTR_LOW_DATA_DPL3, GDT_ATTR_HIGH);
+    uint64 gdtOperand = (((uint64) 0xc0000908) << 16 | (8 * 7 - 1));
+    asm volatile ("lgdt %0"::"m"(gdtOperand));
+    asm volatile ("ltr %w0"::"r"(SELECTOR_TSS));
+    putString("tssInit done");
 }

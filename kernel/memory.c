@@ -3,8 +3,8 @@
 #include "../lib/structure/bitmap.h"
 #include "../lib/debug.h"
 #include "../lib/string.h"
-#include "memory.h"
 #include "global.h"
+#include "memory.h"
 
 
 RAddrPool kRAP, uRAP;
@@ -59,7 +59,7 @@ static void memPoolInit(uint32 allMem) {
     putString("memPoolInit done");
 }
 
-static void* getVaddr(enum PoolFlag pf, uint32 pageCnt) {
+static void* getVaddr(PoolFlag pf, uint32 pageCnt) {
     uint32 vaddrStart = (uint32) NULL;
     uint32 bitIdxStart = -1;
     uint32 cnt = 0;
@@ -70,7 +70,13 @@ static void* getVaddr(enum PoolFlag pf, uint32 pageCnt) {
         }
         vaddrStart = kVAP.startAddr + bitIdxStart * PG_SIZE;
     } else {
-
+        TaskStruct* cur = getCurrentThread();
+        bitIdxStart = bitMapScanAndSet(&cur->vap.bitMap, pageCnt, 1);
+        if (bitIdxStart == -1) {
+            return NULL;
+        }
+        vaddrStart = cur->vap.startAddr + bitIdxStart * PG_SIZE;
+        ASSERT((uint32) vaddrStart < (0xc0000000 - PG_SIZE))
     }
     return (void*) vaddrStart;
 }
@@ -115,7 +121,7 @@ static void mapPageTable(void* vaddr, void* paddr) {
 
 }
 
-void* mallocPage(enum PoolFlag pf, uint32 pageCnt) {
+void* mallocPage(PoolFlag pf, uint32 pageCnt) {
     ASSERT(pageCnt > 0 && pageCnt < 3840)
     void* vaddrStart = getVaddr(pf, pageCnt);
     if (vaddrStart == NULL) {
@@ -137,10 +143,34 @@ void* mallocPage(enum PoolFlag pf, uint32 pageCnt) {
 }
 
 void* getKernelPages(uint32 pageCnt) {
+    lockLock(&kRAP.lock);
     void* vaddr = mallocPage(PF_KERNEL, pageCnt);
     if (vaddr != NULL) {
         memset(vaddr, 0, pageCnt * PG_SIZE);
     }
+    lockUnlock(&kRAP.lock);
+    return vaddr;
+}
+
+void* getUserPages(uint32 pageCnt) {
+    lockLock(&uRAP.lock);
+    void* vaddr = mallocPage(PF_USER, pageCnt);
+    if (vaddr != NULL) {
+        memset(vaddr, 0, pageCnt * PG_SIZE);
+    }
+    lockUnlock(&uRAP.lock);
+    return vaddr;
+}
+
+void* getOnePage(PoolFlag pf, uint32 vaddr) {
+    RAddrPool* rpool = pf == PF_KERNEL ? &kRAP : &uRAP;
+    lockLock(rpool->lock);
+
+    void* vaddr = mallocPage(PF_USER, pageCnt);
+    if (vaddr != NULL) {
+        memset(vaddr, 0, pageCnt * PG_SIZE);
+    }
+    lockUnlock(rpool->lock);
     return vaddr;
 }
 

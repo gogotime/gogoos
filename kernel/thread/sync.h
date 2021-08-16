@@ -6,17 +6,6 @@
 #include "../../lib/debug.h"
 #include "thread.h"
 
-typedef struct {
-    uint8 value;
-    List blockedList;
-    List waitingList;
-} Semaphore;
-
-typedef struct {
-    TaskStruct* holder;
-    Semaphore semaphore;
-    uint32 holderRepeatTimes;
-} Lock;
 
 void semaInit(Semaphore* sema, uint8 value);
 

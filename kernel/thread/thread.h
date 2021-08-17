@@ -69,6 +69,7 @@ typedef struct {
 typedef struct {
     uint32* selfKnlStack;
     TaskStatus status;
+    uint32 pid;
     uint32 priority;
     char name[16];
     uint32 ticks;

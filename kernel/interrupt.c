@@ -7,7 +7,7 @@
 #include "global.h"
 #include "thread/thread.h"
 
-#define IDT_DESC_CNT 0x30
+#define IDT_DESC_CNT 0x81
 
 #define PIC_M_CTRL 0x20
 #define PIC_M_DATA 0x21
@@ -27,6 +27,8 @@ typedef struct {
 
 typedef uint32 IntrEntry;
 extern IntrEntry intrEntryTable[IDT_DESC_CNT];
+extern IntrEntry syscallEntry;
+
 
 char* intrName[IDT_DESC_CNT];
 typedef void (*IntrHandler)(uint8 intrNo);
@@ -102,9 +104,17 @@ static void makeIdtDesc(GateDesc* gd, uint8 attr, IntrEntry fn) {
 }
 
 static void idtDescInit(void) {
-    for (int i = 0; i < IDT_DESC_CNT; i++) {
+    for (int i = 0; i <= 0x2f; i++) {
         makeIdtDesc(&idt[i], IDT_DESC_ATTR_DPL0, intrEntryTable[i]);
     }
+    for (int i = 0x30; i <= 0x7f; i++) {
+        makeIdtDesc(&idt[i], IDT_DESC_ATTR_DPL0, intrEntryTable[0x2f]);
+    }
+    makeIdtDesc(&idt[0x80], IDT_DESC_ATTR_DPL3,(uint32)&syscallEntry);
+//    putString("syscallEntry:");
+//    putUint32Hex(syscallEntry);
+//    putString("\n");
+//    putUint32Hex(&syscallEntry);
 }
 
 static void picInit(void) {
@@ -118,10 +128,7 @@ static void picInit(void) {
     outb(PIC_S_DATA, 0x28);
     outb(PIC_S_DATA, 0x02);
     outb(PIC_S_DATA, 0x01);
-    // Open IR0
-//    outb(PIC_M_DATA, 0xfe);
-//    outb(PIC_S_DATA, 0xff);
-
+    // Open IR0 IR1
     outb(PIC_M_DATA, 0xfc);
     outb(PIC_S_DATA, 0xff);
     putString("pic init done!\n");

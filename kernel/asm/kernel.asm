@@ -5,6 +5,32 @@
 %endmacro
 
 extern intrHandlerTable
+extern syscallHandlerTable
+
+global syscallEntry
+section .text
+syscallEntry:
+    push 0
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
+
+    push 0x80
+
+    push edx
+    push ecx
+    push ebx
+
+    call [syscallHandlerTable+eax*4]
+    add esp,12
+
+    mov [esp+8*4],eax
+    jmp intr_exit
+
+
+
 
 %macro VECTOR 2
 section .text
@@ -27,6 +53,8 @@ section .data
     dd intr%1Entry
 
 %endmacro
+
+
 global intrExit
 section .text
 intrExit:
@@ -40,6 +68,7 @@ intr_exit:
 
     add esp,4
     iret
+
 
 section .data
 

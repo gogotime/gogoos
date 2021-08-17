@@ -12,6 +12,8 @@ List threadReadyList;
 List threadAllList;
 
 static ListElem* threadTag;
+Lock pidLock;
+
 
 extern void switchTo(TaskStruct* cur, TaskStruct* next);
 
@@ -52,11 +54,18 @@ void schedule() {
 }
 
 
+static uint32 allocatePid(void) {
+    static uint32 nextPid = 0;
+    lockLock(&pidLock);
+    nextPid++;
+    lockUnlock(&pidLock);
+    return nextPid;
+}
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg) {
     memset(pcb, 0, sizeof(*pcb));
     strcpy(pcb->name, name);
-
+    pcb->pid = allocatePid();
     pcb->status = TASK_READY;
     pcb->selfKnlStack = (uint32*) ((uint32) pcb + PG_SIZE);
     pcb->priority = priority;
@@ -94,7 +103,7 @@ void threadBlock(TaskStatus status) {
     disableIntr();
 
     TaskStruct* cur = getCurrentThread();
-    ASSERT(!listElemExist(&threadReadyList,&cur->generalTag))
+    ASSERT(!listElemExist(&threadReadyList, &cur->generalTag))
     cur->status = status;
     schedule();
 
@@ -102,13 +111,13 @@ void threadBlock(TaskStatus status) {
 }
 
 void threadUnblock(TaskStruct* pcb) {
-    ASSERT(!listElemExist(&threadReadyList,&pcb->generalTag))
+    ASSERT(!listElemExist(&threadReadyList, &pcb->generalTag))
     ASSERT((pcb->status == TASK_BLOCKED) || (pcb->status == TASK_HANGING) || (pcb->status == TASK_WAITING))
     IntrStatus intrStatus = getIntrStatus();
     disableIntr();
     if (pcb->status != TASK_READY) {
-        ASSERT(!listElemExist(&threadReadyList,&pcb->generalTag))
-        if (listElemExist(&threadReadyList,&pcb->generalTag)){
+        ASSERT(!listElemExist(&threadReadyList, &pcb->generalTag))
+        if (listElemExist(&threadReadyList, &pcb->generalTag)) {
             PANIC("threadUnblock: blocked thread in ready list")
         }
         pcb->status = TASK_READY;
@@ -117,11 +126,12 @@ void threadUnblock(TaskStruct* pcb) {
     setIntrStatus(intrStatus);
 }
 
+
 static void makeMainThread() {
     mainThread = getCurrentThread();
     memset(mainThread, 0, sizeof(*mainThread));
     strcpy(mainThread->name, "main");
-
+    mainThread->pid = allocatePid();
     mainThread->status = TASK_RUNNING;
     mainThread->selfKnlStack = (uint32*) ((uint32) mainThread + PG_SIZE);
     mainThread->priority = 4;
@@ -137,6 +147,7 @@ void threadInit() {
     putString("threadInit start\n");
     listInit(&threadAllList);
     listInit(&threadReadyList);
+    lockInit(&pidLock);
     makeMainThread();
     putString("threadInit done\n");
 }

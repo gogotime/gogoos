@@ -64,7 +64,7 @@ static GDTDesc makeGDTDesc(uint32 base, uint32 limit, uint8 attrLow, uint8 attrH
 }
 
 void tssInit() {
-    putString("tssInit start");
+    putString("tssInit start\n");
     uint32 tssSize = sizeof(tss);
     putString("tss size:");
     putUint32(tssSize);
@@ -78,5 +78,5 @@ void tssInit() {
     uint64 gdtOperand = (((uint64) 0xc0000908) << 16 | (8 * 7 - 1));
     asm volatile ("lgdt %0"::"m"(gdtOperand));
     asm volatile ("ltr %w0"::"r"(SELECTOR_TSS));
-    putString("tssInit done");
+    putString("tssInit done\n");
 }

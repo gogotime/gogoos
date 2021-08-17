@@ -4,6 +4,8 @@
 #include "../lib/string.h"
 #include "../lib/structure/bitmap.h"
 #include "../lib/debug.h"
+#include "../lib/user/syscall.h"
+
 #include "../device/timer.h"
 #include "../device/console.h"
 #include "../device/keyboard.h"
@@ -13,16 +15,20 @@
 #include "thread/thread.h"
 #include "user/tss.h"
 #include "user/process.h"
+#include "user/syscall.h"
 
 void initAll() {
     putString("init all\n");
     idtInit();
+    syscallInit();
     memInit();
     timerInit();
     threadInit();
     consoleInit();
     keyBoardInit();
     tssInit();
+    putString("init all done\n");
+
 }
 
 void testThread1(void* arg);
@@ -59,7 +65,8 @@ void testThread1(void* arg) {
 
 void userProcess(void* arg) {
     while (1) {
-        cnt++;
+        write("asd");
+//        cnt = getPid();
 //        ioQueuePutChar(&keyboardBuf, 'c');
 //        ioQueuePutChar(&keyboardBuf, ' ');
     }

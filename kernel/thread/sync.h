@@ -1,11 +1,8 @@
 # ifndef __KERNEL_THREAD_SYNC_H
 # define __KERNEL_THREAD_SYNC_H
 
-#include "../../lib/structure/list.h"
 #include "../../lib/stdint.h"
-#include "../../lib/debug.h"
 #include "thread.h"
-
 
 void semaInit(Semaphore* sema, uint8 value);
 

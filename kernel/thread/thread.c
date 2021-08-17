@@ -4,6 +4,8 @@
 #include "thread.h"
 #include "../global.h"
 #include "../memory.h"
+#include "../user/process.h"
+
 
 TaskStruct* mainThread;
 List threadReadyList;
@@ -41,8 +43,11 @@ void schedule() {
     TaskStruct* next = elemToEntry(TaskStruct, generalTag, threadTag);
     next->status = TASK_RUNNING;
     putString("switch to:");
+    putString(next->name);
+    putString("   ");
     putUint32Hex((uint32) next);
     putString("\n");
+    processActivate(next);
     switchTo(cur, next);
 }
 

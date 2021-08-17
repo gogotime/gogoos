@@ -1,5 +1,7 @@
-#include "sync.h"
 #include "../../lib/kernel/print.h"
+#include "../../lib/debug.h"
+#include "thread.h"
+#include "../../lib/structure/list.h"
 
 void semaInit(Semaphore* sema, uint8 value) {
     sema->value = value;

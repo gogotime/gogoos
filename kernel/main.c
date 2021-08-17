@@ -12,6 +12,8 @@
 #include "memory.h"
 #include "thread/thread.h"
 #include "user/tss.h"
+#include "user/process.h"
+
 void initAll() {
     putString("init all\n");
     idtInit();
@@ -25,16 +27,21 @@ void initAll() {
 
 void testThread1(void* arg);
 
-void testThread2(void* arg);
+void userProcess(void* arg);
 
 typedef struct {
     uint16 limit;
     uint32 base;
 } GDTR;
 
+volatile uint32 cnt=1;
+
 int main() {
     initAll();
-//    enableIntr();
+    threadStart("thread1",4,testThread1,"a");
+    processStart(userProcess, "userproc1");
+    enableIntr();
+
     while (1) {
 //        consolePutString("Main ");
     };
@@ -44,15 +51,16 @@ int main() {
 
 void testThread1(void* arg) {
     while (1) {
-        char c = ioQueueGetChar(&keyboardBuf);
-        consolePutChar(c);
+//        char c = ioQueueGetChar(&keyboardBuf);
+        consolePutUint32(cnt);
         consolePutString("\n");
     }
 }
 
-void testThread2(void* arg) {
-    char* c = (char*) arg;
+void userProcess(void* arg) {
     while (1) {
-        ioQueuePutChar(&keyboardBuf, *c);
+        cnt++;
+//        ioQueuePutChar(&keyboardBuf, 'c');
+//        ioQueuePutChar(&keyboardBuf, ' ');
     }
 }

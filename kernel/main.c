@@ -5,6 +5,7 @@
 #include "../lib/structure/bitmap.h"
 #include "../lib/debug.h"
 #include "../lib/user/syscall.h"
+#include "../lib/stdio.h"
 
 #include "../device/timer.h"
 #include "../device/console.h"
@@ -46,7 +47,7 @@ int main() {
     initAll();
     threadStart("thread1",4,testThread1,"a");
     processStart(userProcess, "userproc1");
-    enableIntr();
+//    enableIntr();
 
     while (1) {
 //        consolePutString("Main ");
@@ -65,7 +66,8 @@ void testThread1(void* arg) {
 
 void userProcess(void* arg) {
     while (1) {
-        write("asd");
+        printf("%c", 'c');
+        printf("%c", '\n');
 //        cnt = getPid();
 //        ioQueuePutChar(&keyboardBuf, 'c');
 //        ioQueuePutChar(&keyboardBuf, ' ');

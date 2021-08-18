@@ -68,9 +68,11 @@ uint32* pageDirCreate(void) {
 void userVaddrBitMapInit(TaskStruct* userTs) {
     userTs->vap.startAddr = USER_VADDR_START;
     uint32 bmpPgCnt = DIV_ROUND_UP((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8, PG_SIZE);
+    consolePutUint32(bmpPgCnt);
     userTs->vap.bitMap.startAddr = getKernelPages(bmpPgCnt);
     userTs->vap.bitMap.length = (0xc0000000 - USER_VADDR_START) / PG_SIZE / 8;
     bitMapInit(&userTs->vap.bitMap);
+    consolePutUint32Hex(userTs->vap.bitMap.length);
 }
 
 static void userThread(ThreadFunc func, void* funcArg) {

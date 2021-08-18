@@ -5,6 +5,7 @@
 #include "thread/sync.h"
 #include "thread/thread.h"
 #include "../lib/structure/bitmap.h"
+
 typedef struct {
     BitMap bitMap;
     uint32 startAddr;
@@ -13,10 +14,14 @@ typedef struct {
 } RAddrPool;
 
 
-typedef enum  {
+typedef enum {
     PF_USER,
     PF_KERNEL
-}PoolFlag;
+} PoolFlag;
+
+
+
+
 
 #define PG_P_1 1  //present
 #define PG_P_0 0  //not present
@@ -41,4 +46,6 @@ void* getUserPages(uint32 pageCnt);
 void* getOnePage(PoolFlag pf, uint32 vaddr);
 
 uint32 addrV2P(uint32 vaddr);
+
+void memBlockDescInit(MemBlockDesc* descArr);
 # endif

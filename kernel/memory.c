@@ -6,6 +6,14 @@
 #include "global.h"
 #include "memory.h"
 
+typedef struct {
+    MemBlockDesc desc;
+    uint32 cnt;
+    bool large;
+} Arena;
+
+MemBlockDesc kmbdArr[MEM_BLOCK_DESC_CNT];
+
 
 RAddrPool kRAP, uRAP;
 VAddrPool kVAP, uVAP;
@@ -198,15 +206,25 @@ uint32 addrV2P(uint32 vaddr) {
     return ((*pte & 0xfffff000) + (vaddr & 0x00000fff));
 }
 
+void memBlockDescInit(MemBlockDesc* descArr) {
+    uint16 descIdx = 0;
+    uint32 blockSize = 16;
+    for (; descIdx < MEM_BLOCK_DESC_CNT; descIdx++) {
+        descArr[descIdx].blockSize = blockSize;
+        descArr[descIdx].blocksPerArena = (PG_SIZE - sizeof(Arena)) / blockSize;
+        listInit(&descArr[descIdx].freeList);
+        blockSize *= 2;
+    }
+}
+
 void memInit() {
     putString("memInit start\n");
-//    uint32 memBytesTotal = 33554432; //32M
     uint32 memBytesTotal = *((uint32*) (MEMORY_DATA_ADDR));
     putString("total memory bytes:");
     putUint32(memBytesTotal);
     putString("\n");
-//    while (1);
     memPoolInit(memBytesTotal);
+    memBlockDescInit(kmbdArr);
     putString("memInit done\n");
 }
 

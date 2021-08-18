@@ -7,7 +7,7 @@
 
 
 #define STACK_MAGIC_NUMBER 0x20212021
-
+#define MEM_BLOCK_DESC_CNT 7
 
 typedef struct {
     BitMap bitMap;
@@ -67,6 +67,16 @@ typedef struct {
 } ThreadStack;
 
 typedef struct {
+    ListElem freeElem;
+} MemBlock;
+
+typedef struct {
+    uint32 blockSize;
+    uint32 blocksPerArena;
+    List freeList;
+} MemBlockDesc;
+
+typedef struct {
     uint32* selfKnlStack;
     TaskStatus status;
     uint32 pid;
@@ -78,6 +88,7 @@ typedef struct {
     ListElem lockTag;
     ListElem allListTag;
     uint32* pageDir;
+    MemBlockDesc umbdArr[MEM_BLOCK_DESC_CNT];
     VAddrPool vap;
     uint32 stackMagicNum;
 } TaskStruct;

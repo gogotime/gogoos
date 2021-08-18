@@ -83,6 +83,7 @@ void processStart(void* fileName, char* name) {
     TaskStruct* ts = getKernelPages(1);
     threadCreate(ts, name, 12, fileName, "111");
     userVaddrBitMapInit(ts);
+    memBlockDescInit(ts->umbdArr);
     ts->pageDir = pageDirCreate();
     ThreadStack* stack = (ThreadStack*) ts->selfKnlStack;
     stack->eip = userThread;

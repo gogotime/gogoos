@@ -8,7 +8,6 @@
 #include "tss.h"
 
 #define USER_STACK_VADDR (0xc0000000 - 0x1000)
-#define DIV_ROUND_UP(X, STEP) ((X+STEP-1)/(STEP))
 #define USER_VADDR_START 0x0
 
 extern void intrExit();

@@ -45,6 +45,7 @@ static void memPoolInit(uint32 allMem) {
 
     lockInit(&kRAP.lock);
     lockInit(&uRAP.lock);
+
     putString("kernelRAddrPool.bitMap.start=");
     putUint32Hex((uint32) kRAP.bitMap.startAddr);
     putString("\n");
@@ -215,6 +216,59 @@ void memBlockDescInit(MemBlockDesc* descArr) {
         listInit(&descArr[descIdx].freeList);
         blockSize *= 2;
     }
+}
+
+static MemBlock* arenaToBlock(Arena* a, uint32 idx) {
+    return (MemBlock*) ((uint32) a + sizeof(Arena) + idx * a->desc.blockSize);
+}
+
+static Arena* blockToArena(MemBlock* b) {
+    return (Arena*) ((uint32) b & 0xfffff000);
+}
+
+void* sysMalloc(uint32 size) {
+    PoolFlag pf;
+    RAddrPool* rap;
+    uint32 poolSize;
+    MemBlockDesc* mbdArr;
+    TaskStruct* cur = getCurrentThread();
+    if (cur->pageDir == NULL) {
+        pf = PF_KERNEL;
+        poolSize = kRAP.size;
+        rap = &kRAP;
+        mbdArr = kmbdArr;
+    } else {
+        pf = PF_USER;
+        poolSize = uRAP.size;
+        rap = &uRAP;
+        mbdArr = cur->umbdArr;
+    }
+
+    if (!(size > 0 && size < poolSize)) {
+        return NULL;
+    }
+
+    Arena* arena;
+    MemBlock* block;
+    lockLock(&rap->lock);
+
+    if (size > 1024) {
+        uint32 pgCnt = DIV_ROUND_UP(size + sizeof(Arena), PG_SIZE);
+        arena = mallocPage(pf, pgCnt);
+        if (arena != NULL) {
+            arena->desc = NULL;
+            arena->cnt = pgCnt;
+            arena->large = true;
+            lockUnlock(&rap->lock);
+            return (void*) (arena + 1);
+        } else {
+            lockUnlock(&rap->lock);
+            return NULL;
+        }
+    } else {
+
+    }
+
 }
 
 void memInit() {

@@ -1,9 +1,6 @@
 #include "../stdint.h"
+#include "../../kernel/user/syscall_define.h"
 
-typedef enum {
-    SYS_GETPID,
-    SYS_WRITE
-} SYSCALL;
 
 #define syscall0(number) ({ \
    int res;                 \
@@ -42,4 +39,12 @@ uint32 getPid() {
 
 uint32 write(char* str) {
     return syscall1(SYS_WRITE, str);
+}
+
+void* malloc(uint32 size) {
+    return (void*) syscall1(SYS_MALLOC, size);
+}
+
+void free(void* ptr) {
+    syscall1(SYS_FREE, ptr);
 }

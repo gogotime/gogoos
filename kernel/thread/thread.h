@@ -12,7 +12,7 @@
 typedef struct {
     BitMap bitMap;
     uint32 startAddr;
-} VAddrPool;
+} VirtualAddrPool;
 
 typedef void (ThreadFunc)(void*);
 
@@ -89,7 +89,7 @@ typedef struct {
     ListElem allListTag;
     uint32* pageDir;
     MemBlockDesc umbdArr[MEM_BLOCK_DESC_CNT];
-    VAddrPool vap;
+    VirtualAddrPool vap;
     uint32 stackMagicNum;
 } TaskStruct;
 

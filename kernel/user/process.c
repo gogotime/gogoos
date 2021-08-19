@@ -8,7 +8,7 @@
 #include "tss.h"
 
 #define USER_STACK_VADDR (0xc0000000 - 0x1000)
-#define USER_VADDR_START 0x0
+#define USER_VADDR_START 0x1000
 
 extern void intrExit();
 
@@ -80,7 +80,7 @@ static void userThread(ThreadFunc func, void* funcArg) {
 
 void processStart(void* fileName, char* name) {
     TaskStruct* ts = getKernelPages(1);
-    threadCreate(ts, name, 12, fileName, "111");
+    threadCreate(ts, name, 4, fileName, "111");
     userVaddrBitMapInit(ts);
     memBlockDescInit(ts->umbdArr);
     ts->pageDir = pageDirCreate();

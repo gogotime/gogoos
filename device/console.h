@@ -1,6 +1,8 @@
 #ifndef DEVICE_CONSOLE_H
 #define DEVICE_CONSOLE_H
 
+#include <stdarg.h>
+
 void consoleInit();
 
 void consolePutString(char* string);

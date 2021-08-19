@@ -11,7 +11,7 @@ typedef struct {
     uint32 startAddr;
     uint32 size;
     Lock lock;
-} RAddrPool;
+} PhysicalAddrPool;
 
 
 typedef enum {
@@ -37,7 +37,7 @@ uint32* getPtePtr(uint32 vaddr);
 
 uint32* getPdePtr(uint32 vaddr);
 
-void* mallocPage(PoolFlag pf, uint32 pageCnt);
+void* allocPage(PoolFlag pf, uint32 pageCnt);
 
 void* getKernelPages(uint32 pageCnt);
 
@@ -48,4 +48,8 @@ void* getOnePage(PoolFlag pf, uint32 vaddr);
 uint32 addrV2P(uint32 vaddr);
 
 void memBlockDescInit(MemBlockDesc* descArr);
+
+void* sysMalloc(uint32 size);
+
+void sysFree(void* ptr);
 # endif

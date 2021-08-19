@@ -1,4 +1,6 @@
 # include "asm/put_char.h"
+# include "../stdio.h"
+# include <stdarg.h>
 
 void putString(char* string) {
     while (*string) {

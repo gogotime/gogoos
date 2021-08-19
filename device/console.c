@@ -2,7 +2,7 @@
 #include "../lib/kernel/asm/put_char.h"
 #include "../lib/stdint.h"
 #include "../kernel/thread/sync.h"
-
+#include <stdarg.h>
 
 Lock consoleLock;
 

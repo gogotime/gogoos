@@ -44,11 +44,11 @@ void schedule() {
     threadTag = listPop(&threadReadyList);
     TaskStruct* next = elemToEntry(TaskStruct, generalTag, threadTag);
     next->status = TASK_RUNNING;
-    putString("switch to:");
-    putString(next->name);
-    putString("   ");
-    putUint32Hex((uint32) next);
-    putString("\n");
+//    putString("switch to:");
+//    putString(next->name);
+//    putString("   ");
+//    putUint32Hex((uint32) next);
+//    putString("\n");
     processActivate(next);
     switchTo(cur, next);
 }

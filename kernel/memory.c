@@ -66,7 +66,7 @@ static void memPoolInit(uint32 allMem) {
     kernelVap.bitMap.length = kbmLength;
     kernelVap.startAddr = K_HEAP_START;
     bitMapInit(&kernelVap.bitMap);
-    putString("memPoolInit done");
+    putString("memPoolInit done\n");
 }
 
 uint32* getPtePtr(uint32 vaddr) {

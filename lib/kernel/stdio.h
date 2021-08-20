@@ -6,4 +6,6 @@
 
 void printk(const char* format, ...);
 
+void sprintk(char* buf, const char* format, ...);
+
 # endif

@@ -16,7 +16,7 @@ struct partition {
     uint32 secCnt;
     Disk* disk;
     ListElem partTag;
-    SuperBlock* superBlock;
+    uint32 * superBlock;
     char name[8];
     BitMap blockBitMap;
     BitMap inodeBitMap;
@@ -43,6 +43,6 @@ struct ideChannel {
     Disk devices[2];
 };
 
-
+void ideInit();
 
 #endif

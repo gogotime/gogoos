@@ -11,6 +11,7 @@
 #include "../device/timer.h"
 #include "../device/console.h"
 #include "../device/keyboard.h"
+#include "../device/ide.h"
 
 #include "interrupt.h"
 #include "memory.h"
@@ -29,6 +30,7 @@ void initAll() {
     consoleInit();
     keyBoardInit();
     tssInit();
+    ideInit();
     putString("init all done\n");
 
 }
@@ -46,8 +48,8 @@ volatile uint32 cnt = 1;
 
 int main() {
     initAll();
-    threadStart("thread1", 4, testThread1, "a");
-    threadStart("thread2", 4, testThread1, "a");
+//    threadStart("thread1", 4, testThread1, "a");
+//    threadStart("thread2", 4, testThread1, "a");
 //    processStart(userProcess, "userproc1");
     enableIntr();
 

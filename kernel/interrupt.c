@@ -128,9 +128,9 @@ static void picInit(void) {
     outb(PIC_S_DATA, 0x28);
     outb(PIC_S_DATA, 0x02);
     outb(PIC_S_DATA, 0x01);
-    // Open IR0 IR1
-    outb(PIC_M_DATA, 0xfc);
-    outb(PIC_S_DATA, 0xff);
+    // Open IR0 IR1 IR2 IR14
+    outb(PIC_M_DATA, 0xf8);
+    outb(PIC_S_DATA, 0xbf);
     putString("pic init done!\n");
 }
 

@@ -10,5 +10,4 @@ void putUint32(uint32 val);
 
 void putUint32Hex(uint32 val);
 
-
 #endif

@@ -111,10 +111,6 @@ static void idtDescInit(void) {
         makeIdtDesc(&idt[i], IDT_DESC_ATTR_DPL0, intrEntryTable[0x2f]);
     }
     makeIdtDesc(&idt[0x80], IDT_DESC_ATTR_DPL3,(uint32)&syscallEntry);
-//    putString("syscallEntry:");
-//    putUint32Hex(syscallEntry);
-//    putString("\n");
-//    putUint32Hex(&syscallEntry);
 }
 
 static void picInit(void) {

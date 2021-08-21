@@ -30,6 +30,7 @@ void initAll() {
     consoleInit();
     keyBoardInit();
     tssInit();
+    enableIntr();
     ideInit();
     putString("init all done\n");
 
@@ -54,7 +55,7 @@ int main() {
     enableIntr();
 
     while (1) {
-        threadBlock(TASK_BLOCKED);
+//        threadBlock(TASK_BLOCKED);
 //        consolePutString("Main ");
     };
     return 0;

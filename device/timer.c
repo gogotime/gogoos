@@ -21,7 +21,7 @@ static void setFrequency(uint8 counterPort, uint8 counterNo, uint8 rwl, uint8 co
     outb(counterPort, (uint8) (counterValue >> 8));
 }
 
-uint32 ticks;
+volatile uint32 ticks;
 
 static void intrTimerHandler(uint8 intrNr) {
     TaskStruct* curThread = getCurrentThread();

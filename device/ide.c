@@ -1,8 +1,10 @@
 #include "ide.h"
 #include "timer.h"
+#include "console.h"
 #include "../lib/kernel/stdio.h"
 #include "../lib/kernel/io.h"
 #include "../lib/debug.h"
+#include "../lib/string.h"
 #include "../kernel/global.h"
 #include "../kernel/interrupt.h"
 
@@ -106,12 +108,13 @@ static void writeSector(Disk* hd, void* buf, uint8 secCnt) {
 static bool busyWait(Disk* hd) {
     IDEChannel* channel = hd->channel;
     uint16 timeLimit = 30 * 1000;
-    while (timeLimit -= 10 >= 0) {
-        if (!inb(regStatus(channel) & BIT_STAT_BSY)) {
+    while (timeLimit > 0) {
+        if (!(inb(regStatus(channel))& BIT_STAT_BSY)) {
             return inb(regStatus(channel)) & BIT_STAT_DRQ;
         } else {
             sleepMs(10);
         }
+        timeLimit -= 10;
     }
     return false;
 }
@@ -200,14 +203,23 @@ static void identifyDisk(Disk* hd) {
     semaDown(&hd->channel->diskDone);
     if (!busyWait(hd)) {
         char error[64];
-        sprintk(error, "%s identify %d failed!!!\n", hd->name, lba);
+        sprintk(error, "%s identify failed!!!\n", hd->name);
         PANIC(error)
     }
     readSector(hd, info, 1);
-
     char buf[64];
-
-
+    uint8 snStart=20;
+    uint8 snLen = 20;
+    uint8 mdStart = 27 * 2;
+    uint8 mdLen = 40;
+    swapPairsBytes(&info[snStart], buf, snLen);
+    printk("    disk %s info\n        SN:%s\n", hd->name, buf);
+    memset(buf, 0, sizeof(buf));
+    swapPairsBytes(&info[mdStart], buf, mdLen);
+    printk("        MODULE:%s\n", buf);
+    uint32 sectors = *(uint32*) &info[60 * 2];
+    printk("        SECTORS:%d\n", sectors);
+    printk("        CAPACITY:%dMB\n", sectors*512/1024/1024);
 }
 
 void ideInit() {
@@ -217,6 +229,7 @@ void ideInit() {
     channelCnt = DIV_ROUND_UP(hdCnt, 2);
     IDEChannel* channel;
     uint8 channelNo = 0;
+    uint8 devNo = 0;
     while (channelNo < channelCnt) {
         channel = &ideChannel[channelNo];
         sprintk(channel->name, "ide%d", channelNo);
@@ -234,8 +247,17 @@ void ideInit() {
         lockInit(&channel->lock);
         semaInit(&channel->diskDone, 0);
         registerIntrHandler(channel->intrNo, intrHdHandler);
+        while (devNo < 2) {
+            Disk* hd = &channel->devices[devNo];
+            hd->channel = channel;
+            hd->devNo = devNo;
+            sprintk(hd->name, "sd%c", 'a' + channelNo * 2 + devNo);
+            identifyDisk(hd);
+            devNo++;
+        }
+
         channelNo++;
     }
-    printk("ideInit end\n");
+    printk("ideInit done\n");
 }
 

@@ -54,6 +54,7 @@ int main() {
     enableIntr();
 
     while (1) {
+        threadBlock(TASK_BLOCKED);
 //        consolePutString("Main ");
     };
     return 0;

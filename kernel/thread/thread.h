@@ -119,4 +119,6 @@ void threadUnblock(TaskStruct* pcb);
 
 void threadBlock(TaskStatus status);
 
+void threadYield();
+
 # endif

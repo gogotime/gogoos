@@ -8,6 +8,8 @@
 
 
 TaskStruct* mainThread;
+TaskStruct* idleThread;
+
 List threadReadyList;
 List threadAllList;
 
@@ -39,7 +41,9 @@ void schedule() {
     } else {
 
     }
-    ASSERT(!listIsEmpty(&threadReadyList))
+    if (listIsEmpty(&threadReadyList)) {
+        threadUnblock(idleThread);
+    }
     threadTag = NULL;
     threadTag = listPop(&threadReadyList);
     TaskStruct* next = elemToEntry(TaskStruct, generalTag, threadTag);
@@ -86,7 +90,6 @@ void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func,
     kThreadStack->edi = 0;
 }
 
-
 TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg) {
     TaskStruct* pcb = getKernelPages(1);
     threadCreate(pcb, name, priority, function, funcArg);
@@ -126,6 +129,24 @@ void threadUnblock(TaskStruct* pcb) {
     setIntrStatus(intrStatus);
 }
 
+void threadYield() {
+    IntrStatus intrStatus = getIntrStatus();
+    disableIntr();
+    TaskStruct* cur = getCurrentThread();
+    ASSERT(!listElemExist(&threadReadyList, &cur->generalTag))
+    listAppend(&threadReadyList, &cur->generalTag);
+    cur->status = TASK_READY;
+    schedule();
+    setIntrStatus(intrStatus);
+}
+
+static void idleThreadFunc(void* unusedArg) {
+    while (1) {
+        threadBlock(TASK_BLOCKED);
+        putString("IDLE\n");
+        asm volatile ("sti;hlt;":: :"memory");
+    }
+}
 
 static void makeMainThread() {
     mainThread = getCurrentThread();
@@ -149,6 +170,7 @@ void threadInit() {
     listInit(&threadReadyList);
     lockInit(&pidLock);
     makeMainThread();
+    idleThread = threadStart("idle", 1, idleThreadFunc, NULL);
     putString("threadInit done\n");
 }
 

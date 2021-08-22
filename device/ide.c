@@ -7,6 +7,7 @@
 #include "../lib/string.h"
 #include "../kernel/global.h"
 #include "../kernel/interrupt.h"
+#include "../kernel/memory.h"
 
 #define regData(channel)     (channel->portBase + 0 )
 #define regError(channel)     (channel->portBase + 1 )
@@ -43,7 +44,10 @@ uint8 pno = 0;
 uint8 lno = 0;
 List partitionList;
 
-typedef struct partitionTableEntry {
+typedef struct partitionTableEntry PartitionTableEntry;
+typedef struct bootSector BootSector;
+
+struct partitionTableEntry {
     uint8 bootable;
     uint8 startHead;
     uint8 startSec;
@@ -54,13 +58,14 @@ typedef struct partitionTableEntry {
     uint8 endChs;
     uint32 startLba;
     uint32 secCnt;
-} PartitionTableEntry;
+}  __attribute__ ((packed));
 
-typedef struct bootSector {
+struct bootSector {
     uint8 other[446];
     PartitionTableEntry partitionTable[4];
     uint16 signature;
-} BootSector;
+}  __attribute__ ((packed));
+
 
 static void selectDisk(Disk* hd) {
     uint8 regDevice = BIT_DEV_MBS | BIT_DEV_LBA;
@@ -109,7 +114,7 @@ static bool busyWait(Disk* hd) {
     IDEChannel* channel = hd->channel;
     uint16 timeLimit = 30 * 1000;
     while (timeLimit > 0) {
-        if (!(inb(regStatus(channel))& BIT_STAT_BSY)) {
+        if (!(inb(regStatus(channel)) & BIT_STAT_BSY)) {
             return inb(regStatus(channel)) & BIT_STAT_DRQ;
         } else {
             sleepMs(10);
@@ -208,7 +213,7 @@ static void identifyDisk(Disk* hd) {
     }
     readSector(hd, info, 1);
     char buf[64];
-    uint8 snStart=20;
+    uint8 snStart = 20;
     uint8 snLen = 20;
     uint8 mdStart = 27 * 2;
     uint8 mdLen = 40;
@@ -219,17 +224,69 @@ static void identifyDisk(Disk* hd) {
     printk("        MODULE:%s\n", buf);
     uint32 sectors = *(uint32*) &info[60 * 2];
     printk("        SECTORS:%d\n", sectors);
-    printk("        CAPACITY:%dMB\n", sectors*512/1024/1024);
+    printk("        CAPACITY:%dMB\n", sectors * 512 / 1024 / 1024);
+}
+
+static void partitionScan(Disk* hd, uint32 extLba) {
+    BootSector* bs = sysMalloc(sizeof(BootSector));
+    ideRead(hd, extLba, bs, 1);
+    uint8 partIdx = 0;
+    PartitionTableEntry* p = bs->partitionTable;
+    while (partIdx++<4) {
+        if (p->fsType == 0x5) {
+            if (extLbaBase != 0) {
+                partitionScan(hd, p->startLba + extLbaBase);
+            } else {
+                extLbaBase = p->startLba;
+                partitionScan(hd, p->startLba);
+            }
+        } else if (p->fsType != 0) {
+            if (extLba == 0) {
+                hd->primParts[pno].lbaStart = p->startLba;
+                hd->primParts[pno].secCnt = p->secCnt;
+                hd->primParts[pno].disk = hd;
+                listAppend(&partitionList, &hd->primParts[pno].partTag);
+                sprintk(hd->primParts[pno].name, "%s%d", hd->name, pno + 1);
+                pno++;
+                ASSERT(pno < 4)
+            } else {
+                hd->logicParts[lno].lbaStart = extLba + p->startLba;
+                hd->logicParts[lno].secCnt = p->secCnt;
+                hd->logicParts[lno].disk = hd;
+                listAppend(&partitionList, &hd->logicParts[lno].partTag);
+                sprintk(hd->logicParts[lno].name, "%s%d", hd->name, lno + 5);
+                lno++;
+                if (lno >= 4) {
+                    return;
+                }
+            }
+        }
+        p++;
+    }
+    sysFree(bs);
+}
+
+static void printPartitionInfo() {
+    Partition* partition;
+    ListElem* elem;
+    while ((elem = listPop(&partitionList)) != NULL) {
+        Partition* partition = elemToEntry(Partition, partTag, elem);
+        printk("        %s startLba:%d , secCnt:%d\n", partition->name, partition->lbaStart, partition->secCnt);
+    }
 }
 
 void ideInit() {
     printk("ideInit start\n");
+    ASSERT(sizeof(PartitionTableEntry) == 16)
+    ASSERT(sizeof(BootSector) == 512)
+
     hdCnt = *((uint8*) 0x475);
     ASSERT(hdCnt > 0)
     channelCnt = DIV_ROUND_UP(hdCnt, 2);
     IDEChannel* channel;
     uint8 channelNo = 0;
     uint8 devNo = 0;
+    listInit(&partitionList);
     while (channelNo < channelCnt) {
         channel = &ideChannel[channelNo];
         sprintk(channel->name, "ide%d", channelNo);
@@ -247,17 +304,24 @@ void ideInit() {
         lockInit(&channel->lock);
         semaInit(&channel->diskDone, 0);
         registerIntrHandler(channel->intrNo, intrHdHandler);
-        while (devNo < 2) {
-            Disk* hd = &channel->devices[devNo];
+        while (devNo < hdCnt) {
+            Disk* hd = &channel->devices[devNo % 2];
             hd->channel = channel;
             hd->devNo = devNo;
             sprintk(hd->name, "sd%c", 'a' + channelNo * 2 + devNo);
             identifyDisk(hd);
+            if (devNo != 0) {
+                consolePutString("asddas");
+                pno = 0;
+                lno = 0;
+                partitionScan(hd, 0);
+            }
             devNo++;
         }
 
         channelNo++;
     }
+    printPartitionInfo();
     printk("ideInit done\n");
 }
 

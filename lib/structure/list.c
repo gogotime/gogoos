@@ -38,6 +38,9 @@ void listRemove(ListElem* elem) {
 }
 
 ListElem* listPop(List* list) {
+    if (list->head.next == &list->tail) {
+        return NULL;
+    }
     ListElem* elem = list->head.next;
     listRemove(elem);
     return elem;

@@ -7,7 +7,7 @@
 #include "../lib/debug.h"
 #include "../lib/kernel/stdio.h"
 
-static void partitionFormat(Disk* hd, Partition* partition) {
+static void partitionFormat(Disk* disk, Partition* partition) {
     uint32 bootSecCnt = 1;
     uint32 superBlockSecCnt = 1;
     uint32 inodeBitMapSecCnt = DIV_ROUND_UP(MAX_FILE_PER_PART, SECTOR_BYTE_SIZE * 8);
@@ -50,6 +50,10 @@ static void partitionFormat(Disk* hd, Partition* partition) {
 //    printk("        inodeTableLbaStart:%x\n", sb.inodeTableLbaStart);
 //    printk("        inodeTableSecCnt:%d\n", sb.inodeTableSecCnt);
     printk("        dataLbaStart:%x\n", sb.dataLbaStart);
+
+    Disk* hd = partition->disk;
+    ideWrite(hd, partition->lbaStart, &sb, 1);
+
 
 }
 

@@ -45,4 +45,8 @@ struct ideChannel {
 
 void ideInit();
 
+void ideRead(Disk* hd, uint32 lba, void* buf, uint32 secCnt);
+
+void ideWrite(Disk* hd, uint32 lba, void* buf, uint32 secCnt);
+
 #endif

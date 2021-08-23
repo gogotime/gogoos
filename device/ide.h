@@ -29,7 +29,7 @@ struct disk {
     struct ideChannel* channel;
     uint8 devNo;
     Partition primParts[4];
-    Partition logicParts[4];
+    Partition logicParts[8];
 };
 
 

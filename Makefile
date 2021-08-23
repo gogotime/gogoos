@@ -8,7 +8,7 @@ CCFLAGS= -c -m32 -O3 -nostdlib -ffunction-sections -fdata-sections -fno-builtin 
 ASM=nasm
 ASMFLAGS= -f elf32
 
-CMP_DIRS=lib kernel device
+CMP_DIRS=lib kernel device fs
 SCH_DIRS = $(shell find $(CMP_DIRS) -maxdepth 9 -type d)
 OUT_CRT_DIRS+=$(foreach dir, $(SCH_DIRS), $(OUT_DIR)/$(dir) )
 SRCS_C += $(foreach dir, $(SCH_DIRS), $(wildcard $(dir)/*.c))

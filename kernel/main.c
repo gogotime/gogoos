@@ -13,6 +13,8 @@
 #include "../device/keyboard.h"
 #include "../device/ide.h"
 
+#include "../fs/fs.h"
+
 #include "interrupt.h"
 #include "memory.h"
 #include "thread/thread.h"
@@ -32,6 +34,7 @@ void initAll() {
     tssInit();
     enableIntr();
     ideInit();
+    fsInit();
     putString("init all done\n");
 
 }

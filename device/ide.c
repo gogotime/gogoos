@@ -232,7 +232,7 @@ static void partitionScan(Disk* hd, uint32 extLba) {
     ideRead(hd, extLba, bs, 1);
     uint8 partIdx = 0;
     PartitionTableEntry* p = bs->partitionTable;
-    while (partIdx++<4) {
+    while (partIdx++ < 4) {
         if (p->fsType == 0x5) {
             if (extLbaBase != 0) {
                 partitionScan(hd, p->startLba + extLbaBase);
@@ -256,7 +256,7 @@ static void partitionScan(Disk* hd, uint32 extLba) {
                 listAppend(&partitionList, &hd->logicParts[lno].partTag);
                 sprintk(hd->logicParts[lno].name, "%s%d", hd->name, lno + 5);
                 lno++;
-                if (lno >= 4) {
+                if (lno >= 8) {
                     return;
                 }
             }
@@ -266,13 +266,10 @@ static void partitionScan(Disk* hd, uint32 extLba) {
     sysFree(bs);
 }
 
-static void printPartitionInfo() {
-    Partition* partition;
-    ListElem* elem;
-    while ((elem = listPop(&partitionList)) != NULL) {
-        Partition* partition = elemToEntry(Partition, partTag, elem);
-        printk("        %s startLba:%d , secCnt:%d\n", partition->name, partition->lbaStart, partition->secCnt);
-    }
+bool printPartitionInfo(ListElem* elem, int unusedArg) {
+    Partition* partition = elemToEntry(Partition, partTag, elem);
+    printk("        %s startLba:%d , secCnt:%d\n", partition->name, partition->lbaStart, partition->secCnt);
+    return false;
 }
 
 void ideInit() {
@@ -318,10 +315,9 @@ void ideInit() {
             }
             devNo++;
         }
-
         channelNo++;
     }
-    printPartitionInfo();
+    listTraversal(&partitionList, printPartitionInfo, 0);
     printk("ideInit done\n");
 }
 

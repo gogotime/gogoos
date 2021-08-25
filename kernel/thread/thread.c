@@ -57,7 +57,6 @@ void schedule() {
     switchTo(cur, next);
 }
 
-
 static uint32 allocatePid(void) {
     static uint32 nextPid = 0;
     lockLock(&pidLock);
@@ -143,7 +142,7 @@ void threadYield() {
 static void idleThreadFunc(void* unusedArg) {
     while (1) {
         threadBlock(TASK_BLOCKED);
-        putString("IDLE\n");
+//        putString("IDLE\n");
         asm volatile ("sti;hlt;":: :"memory");
     }
 }

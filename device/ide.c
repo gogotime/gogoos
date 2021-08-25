@@ -308,7 +308,6 @@ void ideInit() {
             sprintk(hd->name, "sd%c", 'a' + channelNo * 2 + devNo);
             identifyDisk(hd);
             if (devNo != 0) {
-                consolePutString("asddas");
                 pno = 0;
                 lno = 0;
                 partitionScan(hd, 0);

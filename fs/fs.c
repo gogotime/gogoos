@@ -1,13 +1,17 @@
 
 #include "../device/ide.h"
 #include "../kernel/global.h"
+#include "../kernel/memory.h"
 #include "fs.h"
 #include "dir.h"
 #include "super_block.h"
 #include "../lib/debug.h"
 #include "../lib/kernel/stdio.h"
+#include "../lib/string.h"
 
-static void partitionFormat(Disk* disk, Partition* partition) {
+#define SUPER_BLOCK_MAGIC_NUM 0x20212021
+
+static void partitionFormat(Partition* partition) {
     uint32 bootSecCnt = 1;
     uint32 superBlockSecCnt = 1;
     uint32 inodeBitMapSecCnt = DIV_ROUND_UP(MAX_FILE_PER_PART, SECTOR_BYTE_SIZE * 8);
@@ -21,7 +25,7 @@ static void partitionFormat(Disk* disk, Partition* partition) {
 
     SuperBlock sb;
     ASSERT(sizeof(SuperBlock) == SECTOR_BYTE_SIZE)
-    sb.magicNum = 0x19590318;
+    sb.magicNum = SUPER_BLOCK_MAGIC_NUM;
     sb.secCnt = partition->secCnt;
     sb.inodeCnt = MAX_FILE_PER_PART;
     sb.partLbaStart = partition->lbaStart;
@@ -52,20 +56,68 @@ static void partitionFormat(Disk* disk, Partition* partition) {
     printk("        dataLbaStart:%x\n", sb.dataLbaStart);
 
     Disk* hd = partition->disk;
-    ideWrite(hd, partition->lbaStart, &sb, 1);
+    ideWrite(hd, partition->lbaStart + 1, &sb, 1);
+    uint32 bufSize = (sb.blockBitMapSecCnt > sb.inodeBitMapSecCnt ? sb.blockBitMapSecCnt : sb.inodeBitMapSecCnt);
+    bufSize = (bufSize >= sb.inodeTableSecCnt ? bufSize : sb.inodeTableSecCnt) * SECTOR_BYTE_SIZE;
+    uint8* buf = (uint8*) sysMalloc(bufSize);
+    printk("buf size:%d", bufSize);
+    buf[0] |= 0x01;
+    uint32 blockBitMapLastByte = blockBitMapBitCnt / 8;
+    uint32 blockBitMapLastBit = blockBitMapBitCnt % 8;
+    uint32 lastSize = SECTOR_BYTE_SIZE - (blockBitMapLastByte % SECTOR_BYTE_SIZE);
 
+    memset(&buf[blockBitMapLastByte], 0xff, lastSize);
 
+    uint8 bitIdx = 0;
+    while (bitIdx <= blockBitMapLastBit) {
+        buf[blockBitMapLastByte] &= ~(1 << bitIdx++);
+    }
+    ideWrite(hd, sb.blockBitMapLbaStart, buf, sb.blockBitMapSecCnt);
+
+    memset(buf, 0, bufSize);
+    buf[0] |= 0x01;
+    ideWrite(hd, sb.inodeBitMapLbaStart, buf, sb.inodeBitMapSecCnt);
+
+    memset(buf, 0, bufSize);
+    Inode* i = (Inode*) buf;
+    i->size = sb.dirEntrySize * 2; //. and ..
+    i->ino = 0;
+    i->blockIdx[0] = sb.dataLbaStart;
+    ideWrite(hd, sb.inodeTableLbaStart, buf, sb.inodeTableSecCnt);
+
+    memset(buf, 0, bufSize);
+    DirEntry* dirEntry = (DirEntry*) buf;
+    memcpy(dirEntry, ".", 1);
+    dirEntry->ino = 0;
+    dirEntry->fileType = FT_DIRECTORY;
+
+    dirEntry++;
+    memcpy(dirEntry, "..", 1);
+    dirEntry->ino = 0;
+    dirEntry->fileType = FT_DIRECTORY;
+
+    ideWrite(hd, sb.dataLbaStart, buf, 1);
+
+    printk("    %s format done\n", partition->name);
+    sysFree(buf);
 }
 
-bool printPartitionFormat(ListElem* elem, int unusedArg) {
-    Partition* partition = elemToEntry(Partition, partTag, elem);
-    partitionFormat(partition->disk, partition);
-    return false;
-
-}
 
 extern List partitionList;
 
 void fsInit() {
-//    listTraversal(&partitionList, printPartitionFormat, 0);
+    ASSERT(sizeof(SuperBlock)==SECTOR_BYTE_SIZE)
+    SuperBlock* sb = (SuperBlock*) sysMalloc(SECTOR_BYTE_SIZE);
+    ListElem* elem = partitionList.head.next;
+    while (elem != &partitionList.tail) {
+        Partition* partition = elemToEntry(Partition, partTag, elem);
+        ideRead(partition->disk, partition->lbaStart + 1, sb, 1);
+        if (sb->magicNum == SUPER_BLOCK_MAGIC_NUM) {
+            printk("%s has fileSystem\n", partition->name);
+        } else{
+            printk("format %s\n", partition->name);
+            partitionFormat(partition);
+        }
+        elem = elem->next;
+    }
 }

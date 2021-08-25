@@ -93,7 +93,6 @@ static Arena* blockToArena(MemBlock* b) {
 }
 
 
-
 static void* allocPhyAddr(PhysicalAddrPool* pap) {
     int bitIdx = bitMapScan(&pap->bitMap, 1);
     if (bitIdx == -1) {
@@ -227,17 +226,18 @@ void freePage(PoolFlag pf, void* virPageAddr, uint32 pgCnt) {
             ASSERT((paddr % PG_SIZE) == 0 && paddr > userPap.startAddr)
             freePhyAddr(paddr);
             unmapPageTable(vaddr);
-            vaddr++;
+            vaddr+=PG_SIZE;
             cnt++;
         }
         freeVirAddr(pf, virPageAddr, pgCnt);
     } else {
         while (cnt < pgCnt) {
             paddr = addrV2P(vaddr);
-            ASSERT((paddr % PG_SIZE) == 0 && paddr >= kernelPap.startAddr && paddr < userPap.startAddr)
+            ASSERT((paddr % PG_SIZE) == 0 )
+            ASSERT(paddr >= kernelPap.startAddr && paddr < userPap.startAddr)
             freePhyAddr(paddr);
             unmapPageTable(vaddr);
-            vaddr++;
+            vaddr+=PG_SIZE;
             cnt++;
         }
         freeVirAddr(pf, virPageAddr, pgCnt);
@@ -326,6 +326,7 @@ void* sysMalloc(uint32 size) {
         uint32 pgCnt = DIV_ROUND_UP(size + sizeof(Arena), PG_SIZE);
         arena = allocPage(pf, pgCnt);
         if (arena != NULL) {
+            memset(arena, 0, pgCnt * PG_SIZE);
             arena->desc = NULL;
             arena->cnt = pgCnt;
             arena->large = true;
@@ -401,7 +402,7 @@ void sysFree(void* ptr) {
             uint32 blockIdx;
             for (int blockIdx = 0; blockIdx < arena->desc->blocksPerArena; blockIdx++) {
                 block = arenaToBlock(arena, blockIdx);
-                ASSERT(listElemExist(&arena->desc->freeList,&block->freeElem))
+                ASSERT(listElemExist(&arena->desc->freeList, &block->freeElem))
                 listRemove(&block->freeElem);
             }
             freePage(pf, arena, 1);

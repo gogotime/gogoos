@@ -77,6 +77,15 @@ void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func,
     pcb->pageDir = NULL;
     pcb->stackMagicNum = STACK_MAGIC_NUMBER;
 
+    pcb->fdTable[0] = 0;
+    pcb->fdTable[1] = 1;
+    pcb->fdTable[2] = 2;
+
+    uint8 idx = 3;
+    for (; idx < MAX_FILES_OPEN_PER_PROC; idx++) {
+        pcb->fdTable[idx] = -1;
+    }
+
     pcb->selfKnlStack -= sizeof(IntrStack);
     pcb->selfKnlStack -= sizeof(ThreadStack);
     ThreadStack* kThreadStack = (ThreadStack*) pcb->selfKnlStack;

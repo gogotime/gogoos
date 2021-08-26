@@ -102,11 +102,48 @@ static void partitionFormat(Partition* partition) {
     sysFree(buf);
 }
 
+Partition* curPart;
+
+static bool mountPartition(ListElem* elem, int arg) {
+    char* partName = (char*) arg;
+    Partition* partition = elemToEntry(Partition, partTag, elem);
+    if (strcmp(partition->name, partName)) {
+        return false;
+    }
+    curPart = partition;
+    Disk* hd = partition->disk;
+    SuperBlock* buf = (SuperBlock*) sysMalloc(SECTOR_BYTE_SIZE);
+    curPart->superBlock = (SuperBlock*) sysMalloc(sizeof(SuperBlock));
+    if (curPart->superBlock == NULL) {
+        PANIC("malloc curPart->superBlock failed")
+    }
+    memset(buf, 0, SECTOR_BYTE_SIZE);
+    ideRead(hd, curPart->lbaStart + 1, buf, 1);
+    memcpy(curPart->superBlock, buf, sizeof(SuperBlock));
+    curPart->blockBitMap.startAddr = (uint8*) sysMalloc(buf->blockBitMapSecCnt * SECTOR_BYTE_SIZE);
+    if (curPart->blockBitMap.startAddr == NULL) {
+        PANIC("malloc curPart->blockBitMap.startAddr failed")
+    }
+    curPart->blockBitMap.length = buf->blockBitMapSecCnt * SECTOR_BYTE_SIZE;
+    ideRead(hd, buf->blockBitMapLbaStart, curPart->blockBitMap.startAddr, buf->blockBitMapSecCnt);
+
+    curPart->inodeBitMap.startAddr = (uint8*) sysMalloc(buf->inodeBitMapSecCnt * SECTOR_BYTE_SIZE);
+    if (curPart->inodeBitMap.startAddr == NULL) {
+        PANIC("malloc curPart->inodeBitMap.startAddr failed")
+    }
+    curPart->inodeBitMap.length = buf->inodeBitMapSecCnt * SECTOR_BYTE_SIZE;
+    ideRead(hd, buf->inodeBitMapLbaStart, curPart->inodeBitMap.startAddr, buf->inodeBitMapSecCnt);
+
+    listInit(&curPart->openInodes);
+    printk("mount %s done\n", partition->name);
+
+    return true;
+}
 
 extern List partitionList;
 
 void fsInit() {
-    ASSERT(sizeof(SuperBlock)==SECTOR_BYTE_SIZE)
+    ASSERT(sizeof(SuperBlock) == SECTOR_BYTE_SIZE)
     SuperBlock* sb = (SuperBlock*) sysMalloc(SECTOR_BYTE_SIZE);
     ListElem* elem = partitionList.head.next;
     while (elem != &partitionList.tail) {
@@ -114,10 +151,12 @@ void fsInit() {
         ideRead(partition->disk, partition->lbaStart + 1, sb, 1);
         if (sb->magicNum == SUPER_BLOCK_MAGIC_NUM) {
             printk("%s has fileSystem\n", partition->name);
-        } else{
+        } else {
             printk("format %s\n", partition->name);
             partitionFormat(partition);
         }
         elem = elem->next;
     }
+    char default_part[8] = "sdb1";
+    listTraversal(&partitionList, mountPartition, (int) default_part);
 }

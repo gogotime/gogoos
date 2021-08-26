@@ -1,6 +1,7 @@
 #ifndef DEVICE_IDE_H
 #define DEVICE_IDE_H
 
+#include "../fs/super_block.h"
 #include "../lib/stdint.h"
 #include "../lib/structure/bitmap.h"
 #include "../lib/structure/list.h"
@@ -16,7 +17,7 @@ struct partition {
     uint32 secCnt;
     Disk* disk;
     ListElem partTag;
-    uint32 * superBlock;
+    SuperBlock * superBlock;
     char name[8];
     BitMap blockBitMap;
     BitMap inodeBitMap;

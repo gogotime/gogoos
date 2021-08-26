@@ -5,11 +5,11 @@
 #include "../lib/structure/list.h"
 struct inode {
     uint32 ino;
-    uint32 size;
+    uint32 size; // file size or directory file number
     uint32 openCnt;
     bool writeDeny;
 
-    uint32 blockIdx[13];
+    uint32 block[13];
     ListElem inodeTag;
 };
 

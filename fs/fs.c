@@ -11,6 +11,8 @@
 
 #define SUPER_BLOCK_MAGIC_NUM 0x20212021
 
+Partition* curPart;
+
 static void partitionFormat(Partition* partition) {
     uint32 bootSecCnt = 1;
     uint32 superBlockSecCnt = 1;
@@ -41,7 +43,7 @@ static void partitionFormat(Partition* partition) {
 
     sb.dataLbaStart = sb.inodeTableLbaStart + inodeTableSecCnt;
     sb.rootInodeNo = 0;
-    sb.dirEntrySize = sizeof(Dir);
+    sb.dirEntrySize = sizeof(DirEntry);
 
     printk("    %s info:\n", partition->name);
     printk("        secCnt:%d\n", sb.secCnt);
@@ -101,8 +103,6 @@ static void partitionFormat(Partition* partition) {
     printk("    %s format done\n", partition->name);
     sysFree(buf);
 }
-
-Partition* curPart;
 
 static bool mountPartition(ListElem* elem, int arg) {
     char* partName = (char*) arg;

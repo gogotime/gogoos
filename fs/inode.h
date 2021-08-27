@@ -14,4 +14,12 @@ struct inode {
 };
 
 typedef struct inode Inode;
+
+void inodeSync(Partition* part, Inode* inode, void* ioBuf);
+
+Inode* inodeOpen(Partition* part, uint32 ino);
+
+void inodeClose(Inode* inode);
+
+void inodeInit(uint32 ino, Inode* newInode);
 #endif

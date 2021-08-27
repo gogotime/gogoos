@@ -8,7 +8,7 @@
 
 #define STACK_MAGIC_NUMBER 0x20212021
 #define MEM_BLOCK_DESC_CNT 7
-#define MAX_FILES_OPEN_PER_PROC 7
+#define MAX_FILE_OPEN_PER_PROC 7
 
 typedef struct {
     BitMap bitMap;
@@ -85,7 +85,7 @@ typedef struct {
     char name[16];
     uint32 ticks;
     uint32 elapsedTicks;
-    int32 fdTable[MAX_FILES_OPEN_PER_PROC];
+    int32 fdTable[MAX_FILE_OPEN_PER_PROC];
     ListElem generalTag;
     ListElem lockTag;
     ListElem allListTag;

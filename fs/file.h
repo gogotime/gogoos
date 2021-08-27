@@ -4,7 +4,7 @@
 #include "../lib/stdint.h"
 #include "inode.h"
 
-#define MAX_OPEN_FILE 32
+#define MAX_FILE_OPEN_ALL 32
 
 typedef struct {
     uint32 fdPos;
@@ -27,4 +27,13 @@ typedef enum {
     BLOCK_BITMAP
 }BitMapType;
 
+int32 getFreeSlotInGlobal();
+
+int32 pcbFdInstall(int32 globalFdIdx);
+
+int32 inodeBitMapAlloc(Partition* part);
+
+int32 blockBitMapAlloc(Partition* part);
+
+void bitMapSync(Partition* part, uint32 bitIdx, BitMapType btype);
 #endif

@@ -49,14 +49,18 @@ typedef struct {
 } GDTR;
 
 volatile uint32 cnt = 1;
-
+extern Dir rootDir;
 int main() {
     initAll();
 //    threadStart("thread1", 4, testThread1, "a");
 //    threadStart("thread2", 4, testThread1, "a");
 //    processStart(userProcess, "userproc1");
     enableIntr();
-
+//    sysOpen("/file1", O_CREAT);
+    printDirEntry(&rootDir);
+//    PathSearchRecord record;
+//    int ino = searchFile("/file1", &record);
+//    printk("ino:%d\n", ino);
     while (1) {
 //        threadBlock(TASK_BLOCKED);
 //        consolePutString("Main ");

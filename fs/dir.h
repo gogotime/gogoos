@@ -3,9 +3,14 @@
 
 #include "../lib/stdint.h"
 #include "inode.h"
-#include "fs.h"
 
 #define MAX_FILE_NAME_LEN 16
+
+typedef enum {
+    FT_UNKNOWN,
+    FT_REGULAR,
+    FT_DIRECTORY
+}FileType;
 
 typedef struct dir {
     Inode* inode;
@@ -30,4 +35,6 @@ void dirClose(Dir* dir);
 void createDirEntry(char* fileName, uint32 ino, FileType fileType, DirEntry* de);
 
 bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf);
+
+void printDirEntry(Dir* parentDir);
 #endif

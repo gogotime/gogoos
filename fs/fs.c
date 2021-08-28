@@ -14,6 +14,7 @@
 Partition* curPart;
 extern List partitionList;
 extern Dir rootDir;
+extern File fileTable[MAX_FILE_OPEN_ALL];
 
 static void partitionFormat(Partition* partition) {
     uint32 bootSecCnt = 1;
@@ -53,7 +54,7 @@ static void partitionFormat(Partition* partition) {
     printk("        partLbaStart:%x\n", sb.partLbaStart);
     printk("        blockBitMapLbaStart:%x\n", sb.blockBitMapLbaStart);
     printk("        blockBitMapSecCnt:%d\n", sb.blockBitMapSecCnt);
-//    printk("        inodeBitMapLbaStart:%x\n", sb.inodeBitMapLbaStart);
+    printk("        inodeBitMapLbaStart:%x\n", sb.inodeBitMapLbaStart);
 //    printk("        inodeBitMapSecCnt:%d\n", sb.inodeBitMapSecCnt);
 //    printk("        inodeTableLbaStart:%x\n", sb.inodeTableLbaStart);
 //    printk("        inodeTableSecCnt:%d\n", sb.inodeTableSecCnt);
@@ -61,10 +62,10 @@ static void partitionFormat(Partition* partition) {
 
     Disk* hd = partition->disk;
     ideWrite(hd, partition->lbaStart + 1, &sb, 1);
-    uint32 bufSize = (sb.blockBitMapSecCnt > sb.inodeBitMapSecCnt ? sb.blockBitMapSecCnt : sb.inodeBitMapSecCnt);
+    uint32 bufSize = (sb.blockBitMapSecCnt >= sb.inodeBitMapSecCnt ? sb.blockBitMapSecCnt : sb.inodeBitMapSecCnt);
     bufSize = (bufSize >= sb.inodeTableSecCnt ? bufSize : sb.inodeTableSecCnt) * SECTOR_BYTE_SIZE;
     uint8* buf = (uint8*) sysMalloc(bufSize);
-    printk("buf size:%d", bufSize);
+    printk("    buf size:%d\n", bufSize);
     buf[0] |= 0x01;
     uint32 blockBitMapLastByte = blockBitMapBitCnt / 8;
     uint32 blockBitMapLastBit = blockBitMapBitCnt % 8;
@@ -73,7 +74,7 @@ static void partitionFormat(Partition* partition) {
     memset(&buf[blockBitMapLastByte], 0xff, lastSize);
 
     uint8 bitIdx = 0;
-    while (bitIdx <= blockBitMapLastBit) {
+    while (bitIdx < blockBitMapLastBit) {
         buf[blockBitMapLastByte] &= ~(1 << bitIdx++);
     }
     ideWrite(hd, sb.blockBitMapLbaStart, buf, sb.blockBitMapSecCnt);
@@ -91,12 +92,12 @@ static void partitionFormat(Partition* partition) {
 
     memset(buf, 0, bufSize);
     DirEntry* dirEntry = (DirEntry*) buf;
-    memcpy(dirEntry, ".", 1);
+    memcpy(dirEntry->fileName, ".", 1);
     dirEntry->ino = 0;
     dirEntry->fileType = FT_DIRECTORY;
-
     dirEntry++;
-    memcpy(dirEntry, "..", 1);
+
+    memcpy(dirEntry, "..", 2);
     dirEntry->ino = 0;
     dirEntry->fileType = FT_DIRECTORY;
 
@@ -171,12 +172,12 @@ int32 pathDepthCnt(const char* pathName) {
     return depth;
 }
 
-static int searchFile(const char* pathName, PathSearchRecord* record) {
+int searchFile(const char* pathName, PathSearchRecord* record) {
     if (!strcmp(pathName, "/") || !strcmp(pathName, "/.") || !strcmp(pathName, "/..")) {
         record->parentDir = &rootDir;
         record->fileType = FT_DIRECTORY;
         record->searchPath[0] = 0;
-        return 0
+        return 0;
     }
     uint32 pathLen = strlen(pathName);
     ASSERT(pathName[0] == '/' && pathLen > 0 && pathLen < MAX_PATH_LEN)
@@ -187,6 +188,7 @@ static int searchFile(const char* pathName, PathSearchRecord* record) {
     record->parentDir = parentDir;
     record->fileType = FT_UNKNOWN;
     uint32 parentIno = 0;
+    printk("searchFile 111111\n");
     subPath = pathParse(subPath, name);
     while (name[0]) {
         ASSERT(strlen(record->searchPath)<512)
@@ -212,6 +214,7 @@ static int searchFile(const char* pathName, PathSearchRecord* record) {
             return -1;
         }
     }
+    printk("searchFile 222222\n");
     dirClose(record->parentDir);
     record->parentDir = dirOpen(curPart, parentIno);
     record->fileType = FT_DIRECTORY;
@@ -229,7 +232,8 @@ int32 sysOpen(const char* pathName, uint8 flags) {
     memset(&record, 0, sizeof(record));
     uint32 pathNameDepth = pathDepthCnt(pathName);
     int ino = searchFile(pathName, &record);
-    bool found = ino != -1:true:false;
+    bool found = (ino != -1)?true:false;
+    printk("sysOpen 1111111\n");
     if (record.fileType == FT_DIRECTORY) {
         printk("can't open directory %s with open(), use openDir() instead\n", pathName);
         dirClose(record.parentDir);
@@ -251,6 +255,7 @@ int32 sysOpen(const char* pathName, uint8 flags) {
         dirClose(record.parentDir);
         return -1;
     }
+    printk("sysOpen 2222222\n");
     switch (flags & O_CREAT) {
         case O_CREAT:
             printk("creating file\n");
@@ -275,6 +280,15 @@ void fsInit() {
         }
         elem = elem->next;
     }
-    char default_part[8] = "sdb1";
-    listTraversal(&partitionList, mountPartition, (int) default_part);
+    char defaultPart[8] = "sdb1";
+    listTraversal(&partitionList, mountPartition, (int) defaultPart);
+    openRootDir(curPart);
+    uint32 fdIdx = 0;
+    while (fdIdx < MAX_FILE_OPEN_ALL) {
+        fileTable[fdIdx].fdInode = NULL;
+        fdIdx++;
+    }
+//    for (uint8 blockIdx = 0; blockIdx < 13; blockIdx++) {
+//        printk("rootDir.inode->block%d:%x\n", blockIdx, rootDir.inode->block[blockIdx]);
+//    }
 }

@@ -168,6 +168,16 @@ static void makeMainThread() {
     mainThread->elapsedTicks = 0;
     mainThread->pageDir = NULL;
     mainThread->stackMagicNum = STACK_MAGIC_NUMBER;
+
+    mainThread->fdTable[0] = 0;
+    mainThread->fdTable[1] = 1;
+    mainThread->fdTable[2] = 2;
+
+    uint8 idx = 3;
+    for (; idx < MAX_FILE_OPEN_PER_PROC; idx++) {
+        mainThread->fdTable[idx] = -1;
+    }
+
     ASSERT(!listElemExist(&threadAllList, &mainThread->allListTag))
     listAppend(&threadAllList, &mainThread->allListTag);
 }

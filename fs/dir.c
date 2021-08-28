@@ -15,6 +15,7 @@ extern Partition* curPart;
 void openRootDir(Partition* part) {
     rootDir.inode = inodeOpen(part, part->superBlock->rootInodeNo);
     rootDir.dirPos = 0;
+    memset(rootDir.dirBuf, 0, 512);
 }
 
 Dir* dirOpen(Partition* part, uint32 ino) {
@@ -35,12 +36,15 @@ bool searchDirEntry(Partition* part, Dir* dir, const char* name, DirEntry* de) {
     uint32 blockIdx = 0;
     while (blockIdx < 12) {
         allBlocks[blockIdx] = dir->inode->block[blockIdx];
+        printk("blockIdx%d:%x\n", blockIdx, allBlocks[blockIdx]);
         blockIdx++;
     }
     blockIdx = 0;
+    printk("searchDirEntry 111111111\n");
     if (dir->inode->block[12] != 0) {
         ideRead(part->disk, dir->inode->block[12], allBlocks + 12, 1);
     }
+    printk("searchDirEntry 22222222\n");
     uint8* buf = (uint8*) sysMalloc(SECTOR_BYTE_SIZE);
     DirEntry* curDe = (DirEntry*) buf;
     uint32 dirEntrySize = part->superBlock->dirEntrySize;
@@ -141,11 +145,11 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
                     return false;
                 }
                 blockBitMapIdx = blockLba - curPart->superBlock->dataLbaStart;
-                ASSERT(blockBitMapIdx!=-1)
+                ASSERT(blockBitMapIdx != -1)
                 bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
                 allBlocks[12] = blockLba;
                 ideWrite(curPart->disk, dirInode->block[12], allBlocks + 12, 1);
-            }else{
+            } else {
                 allBlocks[blockIdx] = blockLba;
                 ideWrite(curPart->disk, dirInode->block[12], allBlocks + 12, 1);
             }
@@ -174,4 +178,46 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
     printk("directory is full\n");
     sysFree(allBlocks);
     return false;
+}
+
+void printDirEntry(Dir* parentDir) {
+    Inode* dirInode = parentDir->inode;
+    uint32 dirSize = dirInode->size;
+    uint32 dirEntrySize = curPart->superBlock->dirEntrySize;
+    ASSERT(dirSize % dirEntrySize == 0)
+    uint32 dirEntryCntPerSec = SECTOR_BYTE_SIZE / dirEntrySize;
+    uint8 blockIdx = 0;
+    uint32 blockCnt = 140;
+    uint32* allBlocks = (uint32*) sysMalloc(blockCnt * sizeof(uint32));
+    ASSERT(blockCnt * sizeof(uint32) == 560)
+    if (allBlocks == NULL) {
+        printk("printDirEntry: sysMalloc for allBlocks failed");
+        return;
+    }
+    while (blockIdx < 12) {
+        allBlocks[blockIdx] = dirInode->block[blockIdx];
+        blockIdx++;
+    }
+    if (dirInode->block[12] != 0) {
+        ideRead(curPart->disk, dirInode->block[12], allBlocks + 12, 1);
+    }
+    uint8* ioBuf = (uint8*) sysMalloc(SECTOR_BYTE_SIZE);
+
+    blockIdx = 0;
+    bool flag = true;
+    while (blockIdx < blockCnt && flag) {
+        ideRead(curPart->disk, allBlocks[blockIdx], ioBuf, 1);
+        DirEntry* curDe = (DirEntry*) ioBuf;
+        for (uint8 deIdx = 0; deIdx < dirEntryCntPerSec; deIdx++) {
+            if ((curDe->fileType == FT_DIRECTORY) || (curDe->fileType == FT_REGULAR)) {
+                printk("%s:%d ", curDe->fileName,curDe->ino);
+            } else {
+                flag = false;
+            }
+            curDe++;
+        }
+    }
+    printk("\n");
+    sysFree(allBlocks);
+    sysFree(ioBuf);
 }

@@ -3,7 +3,7 @@
 
 #include "../lib/stdint.h"
 #include "inode.h"
-
+#include "dir.h"
 #define MAX_FILE_OPEN_ALL 32
 
 typedef struct {

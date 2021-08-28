@@ -20,7 +20,7 @@ int32 getFreeSlotInGlobal() {
         fdIdx++;
     }
     if (fdIdx == MAX_FILE_OPEN_ALL) {
-        printk("exceed max open files\n");
+        printk("getFreeSlotInGlobal() exceed max open files\n");
         return -1;
     }
     return fdIdx;
@@ -37,7 +37,7 @@ int32 pcbFdInstall(int32 globalFdIdx) {
         localFdIdx++;
     }
     if (localFdIdx == MAX_FILE_OPEN_PER_PROC) {
-        printk("exceed max open files per proc\n");
+        printk("pcbFdInstall() exceed max open files per proc\n");
         return -1;
     }
     return localFdIdx;
@@ -102,6 +102,7 @@ int32 fileCreate(Dir* parentDir, char* fileName, uint8 flag) {
         rollBackStep = 2;
         goto rollback;
     }
+    printk("fileCreate 1111111111\n");
     fileTable[fdIdx].fdInode = newFileInode;
     fileTable[fdIdx].fdPos = 0;
     fileTable[fdIdx].fdFlag = flag;
@@ -109,7 +110,7 @@ int32 fileCreate(Dir* parentDir, char* fileName, uint8 flag) {
 
     DirEntry newDirEntry;
     memset(&newDirEntry, 0, sizeof(DirEntry));
-    createDirEntry(fileName, ino, FT_REGULAR, newDirEntry);
+    createDirEntry(fileName, ino, FT_REGULAR, &newDirEntry);
     if (!syncDirEntry(parentDir, &newDirEntry, ioBuf)) {
         printk("syncDirEntry(parentDir, &newDirEntry, ioBuf) failed\n");
         rollBackStep = 3;

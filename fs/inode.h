@@ -3,6 +3,8 @@
 
 #include "../lib/stdint.h"
 #include "../lib/structure/list.h"
+#include "../device/ide.h"
+#include "fs.h"
 struct inode {
     uint32 ino;
     uint32 size; // file size or directory file number

@@ -106,9 +106,9 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
         blockIdx++;
     }
     if (dirInode->block[12] != 0) {
-        ideRead(part->disk, dirInode->block[12], allBlocks + 12, 1);
+        ideRead(curPart->disk, dirInode->block[12], allBlocks + 12, 1);
     }
-    DirEntry curDe = (DirEntry*) ioBuf;
+    DirEntry* curDe = (DirEntry*) ioBuf;
     int32 blockBitMapIdx = -1;
     blockIdx = 0;
     while (blockIdx < blockCnt) {
@@ -167,7 +167,7 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
                 sysFree(allBlocks);
                 return true;
             }
-            dirEntryIdx++
+            dirEntryIdx++;
         }
         blockIdx++;
     }

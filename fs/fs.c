@@ -1,10 +1,10 @@
-
 #include "../device/ide.h"
 #include "../kernel/global.h"
 #include "../kernel/memory.h"
 #include "fs.h"
 #include "dir.h"
 #include "super_block.h"
+#include "file.h"
 #include "../lib/debug.h"
 #include "../lib/kernel/stdio.h"
 #include "../lib/string.h"
@@ -12,6 +12,8 @@
 #define SUPER_BLOCK_MAGIC_NUM 0x20212021
 
 Partition* curPart;
+extern List partitionList;
+extern Dir rootDir;
 
 static void partitionFormat(Partition* partition) {
     uint32 bootSecCnt = 1;
@@ -84,7 +86,7 @@ static void partitionFormat(Partition* partition) {
     Inode* i = (Inode*) buf;
     i->size = sb.dirEntrySize * 2; //. and ..
     i->ino = 0;
-    i->blockIdx[0] = sb.dataLbaStart;
+    i->block[0] = sb.dataLbaStart;
     ideWrite(hd, sb.inodeTableLbaStart, buf, sb.inodeTableSecCnt);
 
     memset(buf, 0, bufSize);
@@ -140,7 +142,123 @@ static bool mountPartition(ListElem* elem, int arg) {
     return true;
 }
 
-extern List partitionList;
+static char* pathParse(char* pathName, char* nameStore) {
+    if (pathName[0] == '/') {
+        while (*(++pathName) == '/');
+    }
+    while (*pathName != '/' && *pathName != 0) {
+        *nameStore++ = *pathName++;
+    }
+    if (pathName[0] == 0) {
+        return NULL;
+    }
+    return pathName;
+}
+
+int32 pathDepthCnt(const char* pathName) {
+    ASSERT(pathName != NULL)
+    char* p =(char *) pathName;
+    char name[MAX_FILE_NAME_LEN];
+    uint32 depth = 0;
+    p = pathParse(p, name);
+    while (name[0]) {
+        depth++;
+        memset(name, 0, MAX_FILE_NAME_LEN);
+        if (p) {
+            p = pathParse(p, name);
+        }
+    }
+    return depth;
+}
+
+static int searchFile(const char* pathName, PathSearchRecord* record) {
+    if (!strcmp(pathName, "/") || !strcmp(pathName, "/.") || !strcmp(pathName, "/..")) {
+        record->parentDir = &rootDir;
+        record->fileType = FT_DIRECTORY;
+        record->searchPath[0] = 0;
+        return 0
+    }
+    uint32 pathLen = strlen(pathName);
+    ASSERT(pathName[0] == '/' && pathLen > 0 && pathLen < MAX_PATH_LEN)
+    char* subPath = (char*) pathName;
+    Dir* parentDir = &rootDir;
+    DirEntry de;
+    char name[MAX_FILE_NAME_LEN] = {0};
+    record->parentDir = parentDir;
+    record->fileType = FT_UNKNOWN;
+    uint32 parentIno = 0;
+    subPath = pathParse(subPath, name);
+    while (name[0]) {
+        ASSERT(strlen(record->searchPath)<512)
+        strcat(record->searchPath, "/");
+        strcat(record->searchPath, name);
+        if (searchDirEntry(curPart, parentDir, name, &de)) {
+            memset(name, 0, MAX_FILE_NAME_LEN);
+            if(subPath){
+                subPath = pathParse(subPath, name);
+            }
+            if (de.fileType == FT_DIRECTORY) {
+                parentIno = parentDir->inode->ino;
+                if (parentDir != &rootDir) {
+                    dirClose(parentDir);
+                }
+                parentDir = dirOpen(curPart, de.ino);
+                record->parentDir = parentDir;
+            } else if (de.fileType == FT_REGULAR) {
+                record->fileType = FT_REGULAR;
+                return de.ino;
+            }
+        }else{
+            return -1;
+        }
+    }
+    dirClose(record->parentDir);
+    record->parentDir = dirOpen(curPart, parentIno);
+    record->fileType = FT_DIRECTORY;
+    return de.ino;
+}
+
+int32 sysOpen(const char* pathName, uint8 flags) {
+    if (pathName[strlen(pathName) - 1] == '/') {
+        printk("can't open directory %s with open(), use openDir() instead\n", pathName);
+        return -1;
+    }
+    ASSERT(flags <= 7)
+    int32 fd = -1;
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(record));
+    uint32 pathNameDepth = pathDepthCnt(pathName);
+    int ino = searchFile(pathName, &record);
+    bool found = ino != -1:true:false;
+    if (record.fileType == FT_DIRECTORY) {
+        printk("can't open directory %s with open(), use openDir() instead\n", pathName);
+        dirClose(record.parentDir);
+        return -1;
+    }
+    uint32 pathSearchedDepth = pathDepthCnt(record.searchPath);
+    if (pathNameDepth != pathSearchedDepth) {
+        printk("cannot access %s: Not a directory, subpath %s isn't exist\n", pathName, record.searchPath);
+        dirClose(record.parentDir);
+        return -1;
+    }
+    char* fileName = strrchr(record.searchPath, '/') + 1;
+    if (!found && !(flags & O_CREAT)) {
+        printk("in path:%s, file %s isn't exist", pathName, fileName);
+        dirClose(record.parentDir);
+        return -1;
+    } else if (found && (flags & O_CREAT)) {
+        printk("%s already exist!\n", pathName);
+        dirClose(record.parentDir);
+        return -1;
+    }
+    switch (flags & O_CREAT) {
+        case O_CREAT:
+            printk("creating file\n");
+            fd = fileCreate(record.parentDir, fileName, flags);
+            dirClose(record.parentDir);
+    }
+    return fd;
+}
 
 void fsInit() {
     ASSERT(sizeof(SuperBlock) == SECTOR_BYTE_SIZE)

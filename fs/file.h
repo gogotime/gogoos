@@ -36,4 +36,6 @@ int32 inodeBitMapAlloc(Partition* part);
 int32 blockBitMapAlloc(Partition* part);
 
 void bitMapSync(Partition* part, uint32 bitIdx, BitMapType btype);
+
+int32 fileCreate(Dir* parentDir, char* fileName, uint8 flag);
 #endif

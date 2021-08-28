@@ -19,5 +19,15 @@ typedef struct dirEntry {
     FileType fileType;
 } DirEntry;
 
+void openRootDir(Partition* part);
 
+Dir* dirOpen(Partition* part, uint32 ino);
+
+bool searchDirEntry(Partition* part, Dir* dir, const char* name, DirEntry* de);
+
+void dirClose(Dir* dir);
+
+void createDirEntry(char* fileName, uint32 ino, FileType fileType, DirEntry* de);
+
+bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf);
 #endif

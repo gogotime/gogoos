@@ -82,7 +82,7 @@ void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func,
     pcb->fdTable[2] = 2;
 
     uint8 idx = 3;
-    for (; idx < MAX_FILES_OPEN_PER_PROC; idx++) {
+    for (; idx < MAX_FILE_OPEN_PER_PROC; idx++) {
         pcb->fdTable[idx] = -1;
     }
 

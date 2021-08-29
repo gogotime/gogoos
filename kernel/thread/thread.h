@@ -123,4 +123,5 @@ void threadBlock(TaskStatus status);
 
 void threadYield();
 
+uint32 sysGetPid();
 # endif

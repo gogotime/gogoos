@@ -36,15 +36,12 @@ bool searchDirEntry(Partition* part, Dir* dir, const char* name, DirEntry* de) {
     uint32 blockIdx = 0;
     while (blockIdx < 12) {
         allBlocks[blockIdx] = dir->inode->block[blockIdx];
-        printk("blockIdx%d:%x\n", blockIdx, allBlocks[blockIdx]);
         blockIdx++;
     }
     blockIdx = 0;
-    printk("searchDirEntry 111111111\n");
     if (dir->inode->block[12] != 0) {
         ideRead(part->disk, dir->inode->block[12], allBlocks + 12, 1);
     }
-    printk("searchDirEntry 22222222\n");
     uint8* buf = (uint8*) sysMalloc(SECTOR_BYTE_SIZE);
     DirEntry* curDe = (DirEntry*) buf;
     uint32 dirEntrySize = part->superBlock->dirEntrySize;
@@ -124,7 +121,7 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
                 sysFree(allBlocks);
                 return false;
             }
-            blockBitMapIdx = blockLba - curPart->superBlock->dataLbaStart;
+            blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
             ASSERT(blockBitMapIdx != -1)
             bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
             blockBitMapIdx = -1;
@@ -136,7 +133,7 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
                 blockLba = -1;
                 blockLba = blockBitMapAlloc(curPart);
                 if (blockLba == -1) {
-                    blockBitMapIdx = dirInode->block[12] - curPart->superBlock->dataLbaStart;
+                    blockBitMapIdx = blockLbaToBitMapIdx(dirInode->block[12]);
                     bitMapSet(&curPart->blockBitMap, blockBitMapIdx, 0);
                     dirInode->block[12] = 0;
                     bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
@@ -144,7 +141,7 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf) {
                     sysFree(allBlocks);
                     return false;
                 }
-                blockBitMapIdx = blockLba - curPart->superBlock->dataLbaStart;
+                blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
                 ASSERT(blockBitMapIdx != -1)
                 bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
                 allBlocks[12] = blockLba;

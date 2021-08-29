@@ -1,4 +1,5 @@
 #include "../device/ide.h"
+#include "../device/console.h"
 #include "../kernel/global.h"
 #include "../kernel/memory.h"
 #include "fs.h"
@@ -158,7 +159,7 @@ static char* pathParse(char* pathName, char* nameStore) {
 
 int32 pathDepthCnt(const char* pathName) {
     ASSERT(pathName != NULL)
-    char* p =(char *) pathName;
+    char* p = (char*) pathName;
     char name[MAX_FILE_NAME_LEN];
     uint32 depth = 0;
     p = pathParse(p, name);
@@ -188,15 +189,14 @@ int searchFile(const char* pathName, PathSearchRecord* record) {
     record->parentDir = parentDir;
     record->fileType = FT_UNKNOWN;
     uint32 parentIno = 0;
-    printk("searchFile 111111\n");
     subPath = pathParse(subPath, name);
     while (name[0]) {
-        ASSERT(strlen(record->searchPath)<512)
+        ASSERT(strlen(record->searchPath) < 512)
         strcat(record->searchPath, "/");
         strcat(record->searchPath, name);
         if (searchDirEntry(curPart, parentDir, name, &de)) {
             memset(name, 0, MAX_FILE_NAME_LEN);
-            if(subPath){
+            if (subPath) {
                 subPath = pathParse(subPath, name);
             }
             if (de.fileType == FT_DIRECTORY) {
@@ -210,18 +210,17 @@ int searchFile(const char* pathName, PathSearchRecord* record) {
                 record->fileType = FT_REGULAR;
                 return de.ino;
             }
-        }else{
+        } else {
             return -1;
         }
     }
-    printk("searchFile 222222\n");
     dirClose(record->parentDir);
     record->parentDir = dirOpen(curPart, parentIno);
     record->fileType = FT_DIRECTORY;
     return de.ino;
 }
 
-int32 sysOpen(const char* pathName, uint8 flags) {
+int32 sysOpen(const char* pathName, OFlags flags) {
     if (pathName[strlen(pathName) - 1] == '/') {
         printk("can't open directory %s with open(), use openDir() instead\n", pathName);
         return -1;
@@ -232,8 +231,7 @@ int32 sysOpen(const char* pathName, uint8 flags) {
     memset(&record, 0, sizeof(record));
     uint32 pathNameDepth = pathDepthCnt(pathName);
     int ino = searchFile(pathName, &record);
-    bool found = (ino != -1)?true:false;
-    printk("sysOpen 1111111\n");
+    bool found = (ino != -1) ? true : false;
     if (record.fileType == FT_DIRECTORY) {
         printk("can't open directory %s with open(), use openDir() instead\n", pathName);
         dirClose(record.parentDir);
@@ -255,14 +253,57 @@ int32 sysOpen(const char* pathName, uint8 flags) {
         dirClose(record.parentDir);
         return -1;
     }
-    printk("sysOpen 2222222\n");
     switch (flags & O_CREAT) {
         case O_CREAT:
             printk("creating file\n");
             fd = fileCreate(record.parentDir, fileName, flags);
             dirClose(record.parentDir);
+            break;
+        default:
+            printk("sysOpen no create\n");
+            fd = fileOpen(ino, flags);
     }
     return fd;
+}
+
+static uint32 fdLocalToGlobal(uint32 localFd) {
+    TaskStruct* cur = getCurrentThread();
+    int32 globalFd = cur->fdTable[localFd];
+    ASSERT(globalFd >= 0 && globalFd < MAX_FILE_OPEN_ALL)
+    return (uint32) globalFd;
+}
+
+int32 sysClose(int32 fd) {
+    int32 ret = 1;
+    if (fd > 2) {
+        uint32 globalFd = fdLocalToGlobal(fd);
+        ret = fileClose(&fileTable[globalFd]);
+        getCurrentThread()->fdTable[fd] = -1;
+    }
+    return ret;
+}
+
+uint32 sysWrite(int32 fd, const void* buf, uint32 count) {
+    if (fd < 0) {
+        printk("sysWrite: fd<0\n");
+        return -1
+    }
+    if (fd == stdout) {
+        char tmpBuf[1024] = {0};
+        memcpy(tmpBuf, buf, count);
+        ASSERT(count <= 1024)
+        consolePutString(tmpBuf);
+        return count;
+    }
+    uint32 globalFd = fdLocalToGlobal(fd);
+    File* wf = &fileTable[globalFd];
+    if (wf->fdFlag & O_WRONLY || wf->fdFlag & O_RDWR) {
+        uint32 bytesWritten = fileWrite(wf, buf, count);
+        return bytesWritten;
+    }else{
+        consolePutString("sysWrite: not allowed to write\n");
+        return -1;
+    }
 }
 
 void fsInit() {

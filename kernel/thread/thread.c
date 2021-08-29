@@ -182,6 +182,10 @@ static void makeMainThread() {
     listAppend(&threadAllList, &mainThread->allListTag);
 }
 
+uint32 sysGetPid() {
+    return getCurrentThread()->pid;
+}
+
 void threadInit() {
     putString("threadInit start\n");
     listInit(&threadAllList);

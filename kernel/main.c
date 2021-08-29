@@ -56,11 +56,13 @@ int main() {
 //    threadStart("thread2", 4, testThread1, "a");
 //    processStart(userProcess, "userproc1");
     enableIntr();
-//    sysOpen("/file1", O_CREAT);
     printDirEntry(&rootDir);
-//    PathSearchRecord record;
-//    int ino = searchFile("/file1", &record);
-//    printk("ino:%d\n", ino);
+    uint32 fd=sysOpen("/file1", O_RDWR);
+    printk("file1 ino:%d\n", fd);
+    int32 res=sysClose(fd);
+    if (res != -1) {
+        printk("%d closed successfully\n", fd);
+    }
     while (1) {
 //        threadBlock(TASK_BLOCKED);
 //        consolePutString("Main ");

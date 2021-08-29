@@ -3,7 +3,7 @@
 
 uint32 getPid();
 
-uint32 write(char* str);
+uint32 write(int32 fd, const void* buf, uint32 count);
 
 void* malloc(uint32 size);
 

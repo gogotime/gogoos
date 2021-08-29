@@ -37,8 +37,8 @@ uint32 getPid() {
 }
 
 
-uint32 write(char* str) {
-    return syscall1(SYS_WRITE, str);
+uint32 write(int32 fd, const void* buf, uint32 count) {
+    return syscall3(SYS_WRITE, fd, buf, count);
 }
 
 void* malloc(uint32 size) {

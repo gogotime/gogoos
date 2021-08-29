@@ -2,6 +2,7 @@
 #include "../lib/stdint.h"
 #include "../lib/debug.h"
 #include "../lib/string.h"
+#include "../lib/kernel/stdio.h"
 #include "../device/ide.h"
 #include "../kernel/memory.h"
 #include "fs.h"
@@ -11,6 +12,8 @@ typedef struct {
     uint32 secLba;
     uint32 byteOffset;
 } InodePosition;
+
+extern Partition* curPart;
 
 static void inodeLocate(Partition* part, uint32 ino, InodePosition* ip) {
     ASSERT(ino < 4096)
@@ -61,6 +64,7 @@ Inode* inodeOpen(Partition* part, uint32 ino) {
             inodeFound->openCnt++;
             return inodeFound;
         }
+        elem = elem->next;
     }
     InodePosition ip;
     inodeLocate(part, ino, &ip);
@@ -69,7 +73,6 @@ Inode* inodeOpen(Partition* part, uint32 ino) {
     cur->pageDir = NULL;
     inodeFound = (Inode*) sysMalloc(sizeof(Inode));
     cur->pageDir = curPageDirBak;
-
     char* inodeBuf;
     if (ip.crossSec) {
         inodeBuf = (char*) sysMalloc(2 * SECTOR_BYTE_SIZE);
@@ -111,4 +114,8 @@ void inodeInit(uint32 ino, Inode* newInode) {
         newInode->block[blkIdx]=0;
         blkIdx++;
     }
+}
+
+uint32 blockLbaToBitMapIdx(int32 blockLba) {
+    return blockLba - curPart->superBlock->dataLbaStart;
 }

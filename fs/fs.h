@@ -11,7 +11,11 @@
 #define BLOCK_BYTE_SIZE SECTOR_BYTE_SIZE
 #define MAX_PATH_LEN 512
 
-
+typedef enum {
+    SEEK_SET=1,
+    SEEK_CUR,
+    SEEK_END
+}SeekFlag;
 
 
 typedef struct {
@@ -34,7 +38,11 @@ int32 sysOpen(const char* pathName, OFlags flags);
 
 int32 sysClose(int32 fd);
 
-uint32 sysWrite(char* str);
+uint32 sysWrite(int32 fd, const void* buf, uint32 count);
+
+uint32 sysRead(int32 fd, const void* buf, uint32 count);
+
+int32 sysLseek(int32 fd, int32 offset, uint8 seekFlag);
 
 void fsInit();
 #endif

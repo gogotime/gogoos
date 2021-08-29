@@ -52,4 +52,6 @@ int32 fileOpen(uint32 ino, OFlags flag);
 int32 fileClose(File* file);
 
 int32 fileWrite(File* file, const void* buf, uint32 count);
+
+int32 fileRead(File* file, const void* buf, uint32 count);
 #endif

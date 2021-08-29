@@ -59,9 +59,16 @@ int main() {
     printDirEntry(&rootDir);
     uint32 fd=sysOpen("/file1", O_RDWR);
     printk("file1 ino:%d\n", fd);
+    char buf[64] = {0};
+//    sysWrite(fd, "hello\n", 7);
+    sysRead(fd, buf, 7);
+    printk("%s", buf);
+    sysLseek(fd, 1, SEEK_SET);
+    sysRead(fd, buf, 6);
+    printk("%s", buf);
     int32 res=sysClose(fd);
     if (res != -1) {
-        printk("%d closed successfully\n", fd);
+        printk("fd:%d closed successfully\n", fd);
     }
     while (1) {
 //        threadBlock(TASK_BLOCKED);

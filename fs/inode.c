@@ -15,6 +15,10 @@ typedef struct {
 
 extern Partition* curPart;
 
+uint32 blockLbaToBitMapIdx(int32 blockLba) {
+    return blockLba - curPart->superBlock->dataLbaStart;
+}
+
 static void inodeLocate(Partition* part, uint32 ino, InodePosition* ip) {
     ASSERT(ino < 4096)
     uint32 inodeTableLba = part->superBlock->inodeTableLbaStart;
@@ -111,11 +115,50 @@ void inodeInit(uint32 ino, Inode* newInode) {
     newInode->writeDeny = false;
     uint8 blkIdx = 0;
     while (blkIdx < 13) {
-        newInode->block[blkIdx]=0;
+        newInode->block[blkIdx] = 0;
         blkIdx++;
     }
 }
 
-uint32 blockLbaToBitMapIdx(int32 blockLba) {
-    return blockLba - curPart->superBlock->dataLbaStart;
+void inodeDelete(Partition* part, uint32 ino, void* ioBuf) {
+
 }
+
+void inodeRelease(Partition* part, uint32 ino) {
+    Inode* inodeToDel = inodeOpen(part, ino);
+    ASSERT(inodeToDel->ino == ino)
+    uint32 blockIdx = 0;
+    uint32 blockCnt = 12;
+    uint32 blockBitMapIdx = 0;
+    uint32* allBlocks = (uint32*) sysMalloc(560);
+    while (blockIdx < 12) {
+        allBlocks[blockIdx] = inodeToDel->block[blockIdx];
+        blockIdx++;
+    }
+    if (inodeToDel->block[12] != 0) {
+        ideRead(part->disk, inodeToDel->block[12], allBlocks + 12, 1);
+        blockIdx = 140;
+        blockBitMapIdx = blockLbaToBitMapIdx(inodeToDel->block[12]);
+        ASSERT(blockBitMapIdx>0)
+        bitMapSet(&part->blockBitMap, blockBitMapIdx, 0);
+        bitMapSync(part, blockBitMapIdx, BLOCK_BITMAP);
+    }
+
+    blockIdx = 0;
+    while (blockIdx < blockCnt) {
+        if (allBlocks[blockIdx] != 0) {
+            blockBitMapIdx = blockLbaToBitMapIdx(allBlocks[blockIdx]);
+            ASSERT(blockBitMapIdx>0)
+            bitMapSet(&part->blockBitMap, blockBitMapIdx, 0);
+            bitMapSync(part, blockBitMapIdx, BLOCK_BITMAP);
+        }
+        blockIdx++;
+    }
+    bitMapSet(&part->inodeBitMap, ino, 0);
+    bitMapSync(part, ino, INODE_BITMAP);
+
+    sysFree(allBlocks);
+    inodeClose(inodeToDel);
+
+}
+

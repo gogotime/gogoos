@@ -192,7 +192,7 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
         return -1;
     }
 
-    const uint8* sec = buf;
+    const uint8* src = buf;
     int32 blockLba = -1;
     uint32 bytesWritten = 0;
     uint32 sizeLeft = count;
@@ -217,14 +217,14 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
         bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
     }
 
-    uint32 fileHasUsedBlocks = file->fdInode->size / BLOCK_BYTE_SIZE + 1;
-    uint32 fileWillUseBlocks = (file->fdInode->size + count) / BLOCK_BYTE_SIZE + 1;
-    ASSERT(fileWillUseBlocks <= 140)
+    uint32 fileHasUsedBlocks = file->fdInode->size / BLOCK_BYTE_SIZE;
+    uint32 fileWillUseBlocks = (file->fdInode->size + count) / BLOCK_BYTE_SIZE;
+    ASSERT(fileWillUseBlocks < 140)
 
     uint32 addBlocks = fileWillUseBlocks - fileHasUsedBlocks;
     if (addBlocks == 0) {
-        if (fileWillUseBlocks <= 12) {
-            blockIdx = fileHasUsedBlocks - 1;
+        if (fileWillUseBlocks < 12) {
+            blockIdx = fileHasUsedBlocks;
             ASSERT(file->fdInode->block[blockIdx] != 0)
             allBlocks[blockIdx] = file->fdInode->block[blockIdx];
         } else {
@@ -233,12 +233,12 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
             ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
         }
     } else {
-        if (fileWillUseBlocks <= 12) {
-            blockIdx = fileHasUsedBlocks - 1;
+        if (fileWillUseBlocks < 12) {
+            blockIdx = fileHasUsedBlocks;
             ASSERT(file->fdInode->block[blockIdx] != 0)
             allBlocks[blockIdx] = file->fdInode->block[blockIdx];
-            blockIdx = fileHasUsedBlocks;
-            while (blockIdx < fileWillUseBlocks) {
+            blockIdx = fileHasUsedBlocks + 1;
+            while (blockIdx <= fileWillUseBlocks) {
                 blockLba = blockBitMapAlloc(curPart);
                 if (blockLba == -1) {
                     printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 1 failed\n");
@@ -252,8 +252,8 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
                 bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
                 blockIdx++;
             }
-        } else if (fileHasUsedBlocks <= 12 && fileWillUseBlocks > 12) {
-            blockIdx = fileHasUsedBlocks - 1;
+        } else if (fileHasUsedBlocks < 12 && fileWillUseBlocks >= 12) {
+            blockIdx = fileHasUsedBlocks;
             ASSERT(file->fdInode->block[blockIdx] != 0)
             allBlocks[blockIdx] = file->fdInode->block[blockIdx];
             blockLba = blockBitMapAlloc(curPart);
@@ -264,8 +264,8 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
             ASSERT(file->fdInode->block[12] == 0)
             file->fdInode->block[12] = blockLba;
             indirectBlockTable = blockLba;
-            blockIdx = fileHasUsedBlocks;
-            while (blockIdx < fileWillUseBlocks) {
+            blockIdx = fileHasUsedBlocks + 1;
+            while (blockIdx <= fileWillUseBlocks) {
                 blockLba = blockBitMapAlloc(curPart);
                 if (blockLba == -1) {
                     printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 3 failed\n");
@@ -282,12 +282,12 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
                 blockIdx++;
             }
             ideWrite(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
-        } else if (fileHasUsedBlocks > 12) {
+        } else if (fileHasUsedBlocks >= 12) {
             ASSERT(file->fdInode->block[12] != 0)
             indirectBlockTable = file->fdInode->block[12];
             ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
-            blockIdx = fileHasUsedBlocks;
-            while (blockIdx < fileWillUseBlocks) {
+            blockIdx = fileHasUsedBlocks + 1;
+            while (blockIdx <= fileWillUseBlocks) {
                 blockLba = blockBitMapAlloc(curPart);
                 if (blockLba == -1) {
                     printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 4 failed\n");
@@ -299,6 +299,8 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
                 blockIdx++;
             }
             ideWrite(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
+        } else {
+            PANIC("unexpected path")
         }
     }
     bool firstWriteBlock = true;
@@ -307,7 +309,7 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
         memset(ioBuf, 0, BLOCK_BYTE_SIZE);
         secIdx = file->fdInode->size / BLOCK_BYTE_SIZE;
         secLba = allBlocks[secIdx];
-        secOffBytes = ile->fdInode->size % BLOCK_BYTE_SIZE;
+        secOffBytes = file->fdInode->size % BLOCK_BYTE_SIZE;
         secLeftBytes = BLOCK_BYTE_SIZE - secOffBytes;
         chunkSize = sizeLeft < secLeftBytes ? sizeLeft : secLeftBytes;
         if (firstWriteBlock) {
@@ -316,7 +318,7 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
         }
         memcpy(ioBuf + secOffBytes, src, chunkSize);
         ideWrite(curPart->disk, secLba, ioBuf, 1);
-        printk("file write at lba %x", secLba);
+        printk("file write at lba %x\n", secLba);
         src += chunkSize;
         file->fdInode->size += chunkSize;
         file->fdPos += chunkSize;
@@ -330,7 +332,7 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
 }
 
 int32 fileRead(File* file, const void* buf, uint32 count) {
-    uint8* dst;
+    uint8* dst = (uint8*) buf;
     uint32 size = count;
     uint32 sizeLeft = size;
     if ((file->fdPos + count) > file->fdInode->size) {
@@ -353,143 +355,65 @@ int32 fileRead(File* file, const void* buf, uint32 count) {
     uint32 blockReadStartIdx = file->fdPos / BLOCK_BYTE_SIZE;
     uint32 blockReadEndIdx = (file->fdPos + size) / BLOCK_BYTE_SIZE;
     uint32 readBlocks = blockReadStartIdx - blockReadStartIdx;
-    ASSERT(blockReadStartIdx<=139 && blockReadEndIdx<139)
+    ASSERT(blockReadStartIdx < 140 && blockReadEndIdx < 140)
+    int32 indirectBlockTable;
+    uint32 blockIdx;
+
+    if (readBlocks == 0) {
+        ASSERT(blockReadStartIdx == blockReadEndIdx)
+        if (blockReadEndIdx < 12) {
+            blockIdx = blockReadEndIdx;
+            allBlocks[blockIdx] = file->fdInode->block[blockIdx];
+        } else {
+            indirectBlockTable = file->fdInode->block[12];
+            ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
+        }
+    } else {
+        if (blockReadEndIdx < 12) {
+            blockIdx = blockReadStartIdx;
+            while (blockIdx <= blockReadEndIdx) {
+                allBlocks[blockIdx] = file->fdInode->block[blockIdx];
+                blockIdx++;
+            }
+        } else if (blockReadStartIdx < 12 && blockReadEndIdx >= 12) {
+            blockIdx = blockReadStartIdx;
+            while (blockIdx < 12) {
+                allBlocks[blockIdx] = file->fdInode->block[blockIdx];
+                blockIdx++;
+            }
+            ASSERT(file->fdInode->block[12] != 0)
+            indirectBlockTable = file->fdInode->block[12];
+            ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
+        } else if (blockReadStartIdx >= 12) {
+            ASSERT(file->fdInode->block[12] != 0)
+            indirectBlockTable = file->fdInode->block[12];
+            ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
+        }
+    }
 
 
-
-    const uint8* sec = buf;
-    int32 blockLba = -1;
-    uint32 bytesWritten = 0;
-    uint32 sizeLeft = count;
-    uint32 blockBitMapIdx = 0;
     uint32 secIdx;
     uint32 secLba;
     uint32 secOffBytes;
     uint32 secLeftBytes;
     uint32 chunkSize;
-    int32 indirectBlockTable;
-    uint32 blockIdx;
+    uint32 bytesRead=0;
 
-    if (file->fdInode->block[0] == 0) {
-        blockLba = blockBitMapAlloc(curPart);
-        if (blockLba == -1) {
-            printk("fileWrite:blockLba = blockBitMapAlloc(curPart) failed\n");
-            return -1;
-        }
-        file->fdInode->block[0] = blockLba;
-        blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
-        ASSERT(blockBitMapIdx != 0)
-        bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
-    }
-
-    uint32 fileHasUsedBlocks = file->fdInode->size / BLOCK_BYTE_SIZE + 1;
-    uint32 fileWillUseBlocks = (file->fdInode->size + count) / BLOCK_BYTE_SIZE + 1;
-    ASSERT(fileWillUseBlocks <= 140)
-
-    uint32 addBlocks = fileWillUseBlocks - fileHasUsedBlocks;
-    if (addBlocks == 0) {
-        if (fileWillUseBlocks <= 12) {
-            blockIdx = fileHasUsedBlocks - 1;
-            ASSERT(file->fdInode->block[blockIdx] != 0)
-            allBlocks[blockIdx] = file->fdInode->block[blockIdx];
-        } else {
-            ASSERT(file->fdInode->block[12] != 0)
-            indirectBlockTable = file->fdInode->block[12];
-            ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
-        }
-    } else {
-        if (fileWillUseBlocks <= 12) {
-            blockIdx = fileHasUsedBlocks - 1;
-            ASSERT(file->fdInode->block[blockIdx] != 0)
-            allBlocks[blockIdx] = file->fdInode->block[blockIdx];
-            blockIdx = fileHasUsedBlocks;
-            while (blockIdx < fileWillUseBlocks) {
-                blockLba = blockBitMapAlloc(curPart);
-                if (blockLba == -1) {
-                    printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 1 failed\n");
-                    return -1;
-                }
-                ASSERT(file->fdInode->block[blockIdx] == 0)
-                file->fdInode->block[blockIdx] = blockLba;
-                allBlocks[blockIdx] = blockLba;
-                blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
-                ASSERT(blockBitMapIdx != 0)
-                bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
-                blockIdx++;
-            }
-        } else if (fileHasUsedBlocks <= 12 && fileWillUseBlocks > 12) {
-            blockIdx = fileHasUsedBlocks - 1;
-            ASSERT(file->fdInode->block[blockIdx] != 0)
-            allBlocks[blockIdx] = file->fdInode->block[blockIdx];
-            blockLba = blockBitMapAlloc(curPart);
-            if (blockLba == -1) {
-                printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 2 failed\n");
-                return -1;
-            }
-            ASSERT(file->fdInode->block[12] == 0)
-            file->fdInode->block[12] = blockLba;
-            indirectBlockTable = blockLba;
-            blockIdx = fileHasUsedBlocks;
-            while (blockIdx < fileWillUseBlocks) {
-                blockLba = blockBitMapAlloc(curPart);
-                if (blockLba == -1) {
-                    printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 3 failed\n");
-                    return -1;
-                }
-                if (blockIdx < 12) {
-                    ASSERT(file->fdInode->block[blockIdx] == 0)
-                    file->fdInode->block[blockIdx] = allBlocks[blockIdx] = blockLba;
-                } else {
-                    allBlocks[blockIdx] = blockLba;
-                }
-                blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
-                bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
-                blockIdx++;
-            }
-            ideWrite(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
-        } else if (fileHasUsedBlocks > 12) {
-            ASSERT(file->fdInode->block[12] != 0)
-            indirectBlockTable = file->fdInode->block[12];
-            ideRead(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
-            blockIdx = fileHasUsedBlocks;
-            while (blockIdx < fileWillUseBlocks) {
-                blockLba = blockBitMapAlloc(curPart);
-                if (blockLba == -1) {
-                    printk("fileWrite:blockLba = blockBitMapAlloc(curPart) situation 4 failed\n");
-                    return -1;
-                }
-                allBlocks[blockIdx] = blockLba;
-                blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
-                bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
-                blockIdx++;
-            }
-            ideWrite(curPart->disk, indirectBlockTable, allBlocks + 12, 1);
-        }
-    }
-    bool firstWriteBlock = true;
-    file->fdPos = file->fdInode->size - 1;
-    while (bytesWritten < count) {
-        memset(ioBuf, 0, BLOCK_BYTE_SIZE);
-        secIdx = file->fdInode->size / BLOCK_BYTE_SIZE;
+    while (bytesRead < size) {
+        secIdx = file->fdPos / BLOCK_BYTE_SIZE;
         secLba = allBlocks[secIdx];
-        secOffBytes = ile->fdInode->size % BLOCK_BYTE_SIZE;
+        secOffBytes = file->fdPos % BLOCK_BYTE_SIZE;
         secLeftBytes = BLOCK_BYTE_SIZE - secOffBytes;
         chunkSize = sizeLeft < secLeftBytes ? sizeLeft : secLeftBytes;
-        if (firstWriteBlock) {
-            ideRead(curPart->disk, secLba, ioBuf, 1);
-            firstWriteBlock = false;
-        }
-        memcpy(ioBuf + secOffBytes, src, chunkSize);
-        ideWrite(curPart->disk, secLba, ioBuf, 1);
-        printk("file write at lba %x", secLba);
-        src += chunkSize;
-        file->fdInode->size += chunkSize;
+
+        ideRead(curPart->disk, secLba, ioBuf, 1);
+        memcpy(dst, ioBuf+secOffBytes, chunkSize);
+        dst += chunkSize;
         file->fdPos += chunkSize;
-        bytesWritten += chunkSize;
+        bytesRead += chunkSize;
         sizeLeft -= chunkSize;
     }
-    inodeSync(curPart, file->fdInode, ioBuf);
     sysFree(ioBuf);
     sysFree(allBlocks);
-    return bytesWritten;
+    return bytesRead;
 }

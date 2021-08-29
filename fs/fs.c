@@ -285,8 +285,8 @@ int32 sysClose(int32 fd) {
 
 uint32 sysWrite(int32 fd, const void* buf, uint32 count) {
     if (fd < 0) {
-        printk("sysWrite: fd<0\n");
-        return -1
+        printk("sysWrite error: fd<0\n");
+        return -1;
     }
     if (fd == stdout) {
         char tmpBuf[1024] = {0};
@@ -300,10 +300,50 @@ uint32 sysWrite(int32 fd, const void* buf, uint32 count) {
     if (wf->fdFlag & O_WRONLY || wf->fdFlag & O_RDWR) {
         uint32 bytesWritten = fileWrite(wf, buf, count);
         return bytesWritten;
-    }else{
+    } else {
         consolePutString("sysWrite: not allowed to write\n");
         return -1;
     }
+}
+
+uint32 sysRead(int32 fd, const void* buf, uint32 count) {
+    if (fd < 0) {
+        printk("sysRead error: fd<0\n");
+        return -1;
+    }
+    ASSERT(buf != NULL)
+    uint32 globalFd = fdLocalToGlobal(fd);
+    File* wf = &fileTable[globalFd];
+    uint32 bytesRead = fileRead(wf, buf, count);
+    return bytesRead;
+}
+
+int32 sysLseek(int32 fd, int32 offset, uint8 seekFlag) {
+    if (fd < 0) {
+        printk("sysLseek error: fd<0\n");
+        return -1;
+    }
+    ASSERT(seekFlag > 0 && seekFlag < 4)
+    uint32 globalFd = fdLocalToGlobal(fd);
+    File* file = &fileTable[globalFd];
+    int32 newPos = 0;
+    int32 fileSize = (int32) file->fdInode->size;
+    switch (seekFlag) {
+        case SEEK_SET:
+            newPos = offset;
+            break;
+        case SEEK_CUR:
+            newPos = (int32) file->fdPos + offset;
+            break;
+        case SEEK_END:
+            newPos = fileSize + offset;
+            break;
+    }
+    if (newPos < 0 || newPos > (fileSize - 1)) {
+        return -1;
+    }
+    file->fdPos = newPos;
+    return file->fdPos;
 }
 
 void fsInit() {

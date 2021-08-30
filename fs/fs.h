@@ -48,5 +48,15 @@ int32 sysUnlink(const char* pathName);
 
 int32 sysMkdir(const char* pathName);
 
+Dir* sysOpenDir(const char* pathName);
+
+int32 sysCloseDir(Dir* dir);
+
+DirEntry* sysReadDir(Dir* dir);
+
+void sysRewindDir(Dir* dir);
+
+int32 sysRmdir(const char* pathName);
+
 void fsInit();
 #endif

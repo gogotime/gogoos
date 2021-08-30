@@ -203,7 +203,7 @@ void printDirEntry(Dir* parentDir) {
     blockIdx = 0;
     bool flag = true;
     while (blockIdx < blockCnt && flag) {
-        if(allBlocks[blockIdx]==0){
+        if (allBlocks[blockIdx] == 0) {
             continue;
         }
         ideRead(curPart->disk, allBlocks[blockIdx], ioBuf, 1);
@@ -302,11 +302,85 @@ bool deleteDirEntry(Partition* part, Dir* dir, uint32 ino, void* ioBuf) {
             memset(deFound, 0, dirEntrySize);
             ideWrite(part->disk, allBlocks[blockIdx], ioBuf, 1);
         }
-        ASSERT(dirInode->size>=dirEntrySize)
+        ASSERT(dirInode->size >= dirEntrySize)
         dirInode->size -= dirEntrySize;
         memset(ioBuf, 0, SECTOR_BYTE_SIZE * 2);
         inodeSync(part, dirInode, ioBuf);
         return true;
     }
     return false;
+}
+
+DirEntry* dirRead(Dir* dir) {
+    DirEntry* de = (DirEntry*) dir->dirBuf;
+    Inode* dirInode = dir->inode;
+    uint8 blockIdx = 0;
+    uint32 blockCnt = 12;
+    uint32* allBlocks = (uint32*) sysMalloc(560);
+    if (allBlocks == NULL) {
+        printk("dirRead: sysMalloc for allBlocks failed");
+        return NULL;
+    }
+    while (blockIdx < 12) {
+        allBlocks[blockIdx] = dirInode->block[blockIdx];
+        blockIdx++;
+    }
+    if (dirInode->block[12] != 0) {
+        ideRead(curPart->disk, dirInode->block[12], allBlocks + 12, 1);
+        blockCnt = 140;
+    }
+    blockIdx = 0;
+    uint32 curDirEntryPos = 0;
+    uint32 dirSize = dirInode->size;
+    uint32 dirEntrySize = curPart->superBlock->dirEntrySize;
+    ASSERT(dirSize % dirEntrySize == 0)
+    uint32 dirEntryIdx = 0;
+    uint32 dirEntryCntPerSec = SECTOR_BYTE_SIZE / dirEntrySize;
+    while (dir->dirPos < dirInode->size && blockIdx < blockCnt) {
+        if (allBlocks[blockIdx] == 0) {
+            blockIdx++;
+            continue;
+        }
+        memset(de, 0, SECTOR_BYTE_SIZE);
+        ideRead(curPart->disk, allBlocks[blockIdx], de, 1);
+        dirEntryIdx = 0;
+        while (dirEntryIdx < dirEntryCntPerSec) {
+            if ((de + dirEntryIdx)->fileType != FT_UNKNOWN) {
+                if (curDirEntryPos < dir->dirPos) {
+                    curDirEntryPos += dirEntrySize;
+                    dirEntryIdx++;
+                    continue;
+                }
+                ASSERT(curDirEntryPos == dir->dirPos)
+                dir->dirPos += dirEntrySize;
+                return de + dirEntryIdx;
+            }
+            dirEntryIdx++;
+        }
+        blockIdx++;
+    }
+    return NULL;
+}
+
+bool dirIsEmpty(Dir* dir) {
+    Inode* dirInode = dir->inode;
+    return dirInode->size == curPart->superBlock->dirEntrySize * 2;
+}
+
+int32 dirRemove(Dir* parentDir, Dir* chileDir) {
+    Inode* childDirInode = chileDir->inode;
+    int32 blockIdx = 1;
+    while (blockIdx < 13) {
+        ASSERT(childDirInode->block[blockIdx]==0)
+        blockIdx++;
+    }
+    void* ioBuf = sysMalloc(SECTOR_BYTE_SIZE * 2);
+    if (ioBuf == NULL) {
+        printk("dirRemove: ioBuf = sysMalloc(SECTOR_BYTE_SIZE * 2) failed\n");
+        return -1;
+    }
+    deleteDirEntry(curPart, parentDir, childDirInode->ino, ioBuf);
+    inodeRelease(curPart, childDirInode->ino);
+    sysFree(ioBuf);
+    return 0;
 }

@@ -39,4 +39,10 @@ bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf);
 void printDirEntry(Dir* parentDir);
 
 bool deleteDirEntry(Partition* part, Dir* dir, uint32 ino, void* ioBuf);
+
+DirEntry* dirRead(Dir* dir);
+
+bool dirIsEmpty(Dir* dir);
+
+int32 dirRemove(Dir* parentDir, Dir* chileDir);
 #endif

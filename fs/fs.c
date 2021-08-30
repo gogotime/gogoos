@@ -400,7 +400,6 @@ int32 sysMkdir(const char* pathName) {
     memset(&record, 0, sizeof(PathSearchRecord));
     int ino = searchFile(pathName, &record);
     ASSERT(ino != 0)
-    printk("ino:%d", ino);
     if (ino != -1) {
         printk("sysMkdir: file or directory %s already exist!\n", pathName);
         rollBackStep = 1;
@@ -436,7 +435,7 @@ int32 sysMkdir(const char* pathName) {
 
     newDirInode.block[0] = blockLba;
     blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
-    ASSERT(blockBitMapIdx!=0)
+    ASSERT(blockBitMapIdx != 0)
     bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
 
     memset(ioBuf, 0, 2 * SECTOR_BYTE_SIZE);
@@ -490,6 +489,70 @@ int32 sysMkdir(const char* pathName) {
     return -1;
 }
 
+Dir* sysOpenDir(const char* pathName) {
+    ASSERT(strlen(pathName) <= MAX_PATH_LEN)
+    if (pathName[0] == '/' && (pathName[1] == 0 || pathName[1] == '.')) {
+        return &rootDir;
+    }
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(PathSearchRecord));
+    int32 ino = searchFile(pathName, &record);
+    Dir* ret = NULL;
+    if (ino == -1) {
+        printk("sysOpenDir: directory %s isn't existing\n", pathName);
+    } else {
+        if (record.fileType == FT_REGULAR) {
+            printk("sysOpenDir: %s is a file, not directory\n", pathName);
+        } else if (record.fileType == FT_DIRECTORY) {
+            ret = dirOpen(curPart, ino);
+        }
+    }
+    return ret;
+}
+
+int32 sysCloseDir(Dir* dir) {
+    int32 ret = -1;
+    if (dir != NULL) {
+        dirClose(dir);
+        ret = 0;
+    }
+    return ret;
+}
+
+DirEntry* sysReadDir(Dir* dir) {
+    ASSERT(dir != NULL)
+    return dirRead(dir);
+}
+
+void sysRewindDir(Dir* dir) {
+    ASSERT(dir != NULL)
+    dir->dirPos = 0;
+}
+
+int32 sysRmdir(const char* pathName) {
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(PathSearchRecord));
+    int32 ino = searchFile(pathName, &record);
+    int32 ret = -1;
+    if (ino == -1) {
+        printk("sysRmdir: directory %s isn't existing\n", pathName);
+    } else if (ino == 0) {
+        printk("sysRmdir: can't delete root directory\n");
+    } else {
+        Dir* dir = dirOpen(curPart, ino);
+        if (!dirIsEmpty(dir)) {
+            printk("sysRmdir: can't remove directory, %s isn't empty\n", pathName);
+        } else {
+            if (!dirRemove(record.parentDir, dir)) {
+                ret = 0;
+            }
+        }
+        dirClose(dir);
+    }
+    dirClose(record.parentDir);
+    return ret;
+}
+
 void fsInit() {
     ASSERT(sizeof(SuperBlock) == SECTOR_BYTE_SIZE)
     SuperBlock* sb = (SuperBlock*) sysMalloc(SECTOR_BYTE_SIZE);
@@ -514,7 +577,4 @@ void fsInit() {
         fileTable[fdIdx].fdInode = NULL;
         fdIdx++;
     }
-//    for (uint8 blockIdx = 0; blockIdx < 13; blockIdx++) {
-//        printk("rootDir.inode->block%d:%x\n", blockIdx, rootDir.inode->block[blockIdx]);
-//    }
 }

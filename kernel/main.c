@@ -1,17 +1,17 @@
 #include "../lib/kernel/print.h"
 #include "../lib/kernel/io.h"
 #include "../lib/kernel/interrupt.h"
-#include "../lib/string.h"
-#include "../lib/structure/bitmap.h"
-#include "../lib/debug.h"
-#include "../lib/user/syscall.h"
-#include "../lib/stdio.h"
 #include "../lib/kernel/stdio.h"
+#include "../lib/structure/bitmap.h"
+#include "../lib/user/syscall.h"
+#include "../lib/string.h"
+#include "../lib/debug.h"
+#include "../lib/stdio.h"
 
-#include "../device/timer.h"
 #include "../device/console.h"
-#include "../device/keyboard.h"
 #include "../device/ide.h"
+#include "../device/keyboard.h"
+#include "../device/timer.h"
 
 #include "../fs/fs.h"
 
@@ -43,14 +43,10 @@ void testThread1(void* arg);
 
 void userProcess(void* arg);
 
-typedef struct {
-    uint16 limit;
-    uint32 base;
-} GDTR;
-
 volatile uint32 cnt = 1;
 extern Dir rootDir;
 extern Partition* curPart;
+
 int main() {
     initAll();
 //    threadStart("thread1", 4, testThread1, "a");
@@ -60,12 +56,23 @@ int main() {
 //    printDirEntry(&rootDir);
 //    sysMkdir("/dir1/dir2");
 //    sysMkdir("/dir1");
-    PathSearchRecord record;
-//    searchFile(".", &record);
-
-    printDirEntry(&rootDir);
-    Dir* dir1 = dirOpen(curPart, 1);
-    printDirEntry(dir1);
+    Dir* root = sysOpenDir("/.");
+    sysMkdir("/dir3");
+    DirEntry* de = NULL;
+    while ((de = sysReadDir(root)) != NULL) {
+        printk("%d %s\n", de->fileType, de->fileName);
+    }
+    sysMkdir("/dir3/dir1");
+    sysRmdir("/dir3");
+    sysRmdir("/dir3/dir1");
+    sysRmdir("/dir3");
+    sysRewindDir(root);
+    while ((de = sysReadDir(root)) != NULL) {
+        printk("%d %s\n", de->fileType, de->fileName);
+    }
+//    printDirEntry(&rootDir);
+//    Dir* dir1 = sysOpenDir("/dir1");
+//    printDirEntry(dir1);
 
     while (1) {
 //        threadBlock(TASK_BLOCKED);

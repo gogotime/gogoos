@@ -184,9 +184,8 @@ void printDirEntry(Dir* parentDir) {
     ASSERT(dirSize % dirEntrySize == 0)
     uint32 dirEntryCntPerSec = SECTOR_BYTE_SIZE / dirEntrySize;
     uint8 blockIdx = 0;
-    uint32 blockCnt = 140;
-    uint32* allBlocks = (uint32*) sysMalloc(blockCnt * sizeof(uint32));
-    ASSERT(blockCnt * sizeof(uint32) == 560)
+    uint32 blockCnt = 12;
+    uint32* allBlocks = (uint32*) sysMalloc(560);
     if (allBlocks == NULL) {
         printk("printDirEntry: sysMalloc for allBlocks failed");
         return;
@@ -197,17 +196,21 @@ void printDirEntry(Dir* parentDir) {
     }
     if (dirInode->block[12] != 0) {
         ideRead(curPart->disk, dirInode->block[12], allBlocks + 12, 1);
+        blockCnt = 140;
     }
     uint8* ioBuf = (uint8*) sysMalloc(SECTOR_BYTE_SIZE);
 
     blockIdx = 0;
     bool flag = true;
     while (blockIdx < blockCnt && flag) {
+        if(allBlocks[blockIdx]==0){
+            continue;
+        }
         ideRead(curPart->disk, allBlocks[blockIdx], ioBuf, 1);
         DirEntry* curDe = (DirEntry*) ioBuf;
         for (uint8 deIdx = 0; deIdx < dirEntryCntPerSec; deIdx++) {
             if ((curDe->fileType == FT_DIRECTORY) || (curDe->fileType == FT_REGULAR)) {
-                printk("%s:%d ", curDe->fileName,curDe->ino);
+                printk("%s:%d ", curDe->fileName, curDe->ino);
             } else {
                 flag = false;
             }
@@ -217,4 +220,93 @@ void printDirEntry(Dir* parentDir) {
     printk("\n");
     sysFree(allBlocks);
     sysFree(ioBuf);
+}
+
+bool deleteDirEntry(Partition* part, Dir* dir, uint32 ino, void* ioBuf) {
+    Inode* dirInode = dir->inode;
+    uint32 blockIdx = 0;
+    uint32* allBlocks = (uint32*) sysMalloc(560);
+    while (blockIdx < 12) {
+        allBlocks[blockIdx] = dirInode->block[blockIdx];
+        blockIdx++;
+    }
+    if (dirInode->block[12] != 0) {
+        ideRead(part->disk, dirInode->block[12], allBlocks + 12, 1);
+    }
+    DirEntry* curDe = (DirEntry*) ioBuf;
+    DirEntry* deFound = NULL;
+    uint32 dirEntrySize = part->superBlock->dirEntrySize;
+    uint32 dirEntryCntPerSec = SECTOR_BYTE_SIZE / dirEntrySize;
+    uint32 dirEntryIdx;
+    uint32 dirEntryCnt;
+    bool isDirFirstBlock = false;
+    blockIdx = 0;
+    while (blockIdx < 140) {
+        isDirFirstBlock = false;
+        if (allBlocks[blockIdx] == 0) {
+            blockIdx++;
+            continue;
+        }
+        dirEntryIdx = dirEntryCnt = 0;
+        memset(ioBuf, 0, SECTOR_BYTE_SIZE);
+        ideRead(part->disk, allBlocks[blockIdx], ioBuf, 1);
+
+        while (dirEntryIdx < dirEntryCntPerSec) {
+            if ((curDe + dirEntryIdx)->fileType != FT_UNKNOWN) {
+                if (!strcmp((curDe + dirEntryIdx)->fileName, ".")) {
+                    isDirFirstBlock = true;
+                } else if (strcmp((curDe + dirEntryIdx)->fileName, ".") &&
+                           strcmp((curDe + dirEntryIdx)->fileName, ".")) {
+                    dirEntryCnt++;
+                    if ((curDe + dirEntryIdx)->ino == ino) {
+                        ASSERT(deFound == NULL)
+                        deFound = curDe + dirEntryIdx;
+                    }
+                }
+            }
+            dirEntryIdx++;
+        }
+        if (deFound == NULL) {
+            blockIdx++;
+            continue;
+        }
+        ASSERT(dirEntryCnt >= 1)
+        if (dirEntryCnt == 1 && !isDirFirstBlock) {
+            uint32 blockBitMapIdx = blockLbaToBitMapIdx(allBlocks[blockIdx]);
+            bitMapSet(&part->blockBitMap, blockBitMapIdx, 0);
+            bitMapSync(part, blockBitMapIdx, BLOCK_BITMAP);
+            if (blockIdx < 12) {
+                dirInode->block[blockIdx] = 0;
+            } else {
+                uint32 indirectBlocksCnt = 0;
+                uint32 indirectBlocksIdx = 12;
+                while (indirectBlocksIdx < 140) {
+                    if (allBlocks[indirectBlocksIdx] != 0) {
+                        indirectBlocksCnt++;
+                    }
+                    indirectBlocksIdx++;
+                }
+                ASSERT(indirectBlocksCnt >= 1)
+                if (indirectBlocksCnt > 1) {
+                    allBlocks[blockIdx] = 0;
+                    ideWrite(part->disk, dirInode->block[12], allBlocks + 12, 1);
+                } else {
+                    uint32 blockBitMapIdx = blockLbaToBitMapIdx(allBlocks[12]);
+                    bitMapSet(&part->blockBitMap, blockBitMapIdx, 0);
+                    bitMapSync(part, blockBitMapIdx, BLOCK_BITMAP);
+                    dirInode->block[12] = 0;
+                }
+            }
+
+        } else {
+            memset(deFound, 0, dirEntrySize);
+            ideWrite(part->disk, allBlocks[blockIdx], ioBuf, 1);
+        }
+        ASSERT(dirInode->size>=dirEntrySize)
+        dirInode->size -= dirEntrySize;
+        memset(ioBuf, 0, SECTOR_BYTE_SIZE * 2);
+        inodeSync(part, dirInode, ioBuf);
+        return true;
+    }
+    return false;
 }

@@ -50,26 +50,23 @@ typedef struct {
 
 volatile uint32 cnt = 1;
 extern Dir rootDir;
+extern Partition* curPart;
 int main() {
     initAll();
 //    threadStart("thread1", 4, testThread1, "a");
 //    threadStart("thread2", 4, testThread1, "a");
 //    processStart(userProcess, "userproc1");
     enableIntr();
+//    printDirEntry(&rootDir);
+//    sysMkdir("/dir1/dir2");
+//    sysMkdir("/dir1");
+    PathSearchRecord record;
+//    searchFile(".", &record);
+
     printDirEntry(&rootDir);
-    uint32 fd=sysOpen("/file1", O_RDWR);
-    printk("file1 ino:%d\n", fd);
-    char buf[64] = {0};
-//    sysWrite(fd, "hello\n", 7);
-    sysRead(fd, buf, 7);
-    printk("%s", buf);
-    sysLseek(fd, 1, SEEK_SET);
-    sysRead(fd, buf, 6);
-    printk("%s", buf);
-    int32 res=sysClose(fd);
-    if (res != -1) {
-        printk("fd:%d closed successfully\n", fd);
-    }
+    Dir* dir1 = dirOpen(curPart, 1);
+    printDirEntry(dir1);
+
     while (1) {
 //        threadBlock(TASK_BLOCKED);
 //        consolePutString("Main ");

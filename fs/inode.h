@@ -27,4 +27,6 @@ void inodeClose(Inode* inode);
 void inodeInit(uint32 ino, Inode* newInode);
 
 uint32 blockLbaToBitMapIdx(int32 blockLba);
+
+void inodeRelease(Partition* part, uint32 ino);
 #endif

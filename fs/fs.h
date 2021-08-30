@@ -24,7 +24,7 @@ typedef struct {
     FileType fileType;
 }PathSearchRecord;
 
-static void partitionFormat(Partition* partition);
+void partitionFormat(Partition* partition);
 
 static bool mountPartition(ListElem* elem, int arg);
 
@@ -43,6 +43,10 @@ uint32 sysWrite(int32 fd, const void* buf, uint32 count);
 uint32 sysRead(int32 fd, const void* buf, uint32 count);
 
 int32 sysLseek(int32 fd, int32 offset, uint8 seekFlag);
+
+int32 sysUnlink(const char* pathName);
+
+int32 sysMkdir(const char* pathName);
 
 void fsInit();
 #endif

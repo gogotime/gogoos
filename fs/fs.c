@@ -17,7 +17,7 @@ extern List partitionList;
 extern Dir rootDir;
 extern File fileTable[MAX_FILE_OPEN_ALL];
 
-static void partitionFormat(Partition* partition) {
+void partitionFormat(Partition* partition) {
     uint32 bootSecCnt = 1;
     uint32 superBlockSecCnt = 1;
     uint32 inodeBitMapSecCnt = DIV_ROUND_UP(MAX_FILE_PER_PART, SECTOR_BYTE_SIZE * 8);
@@ -346,6 +346,150 @@ int32 sysLseek(int32 fd, int32 offset, uint8 seekFlag) {
     return file->fdPos;
 }
 
+int32 sysUnlink(const char* pathName) {
+    ASSERT(strlen(pathName) < MAX_PATH_LEN)
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(PathSearchRecord));
+    int ino = searchFile(pathName, &record);
+    ASSERT(ino != 0)
+    if (ino == -1) {
+        printk("file %s not found!\n", pathName);
+        dirClose(record.parentDir);
+        return -1;
+    }
+    if (record.fileType == FT_DIRECTORY) {
+        printk("can't delete a directory with unlink(), use rmdir() instead\n");
+        dirClose(record.parentDir);
+        return -1;
+    }
+    uint32 fileIdx = 0;
+    while (fileIdx < MAX_FILE_OPEN_ALL) {
+        if (fileTable[fileIdx].fdInode != NULL && fileTable[fileIdx].fdInode->ino == ino) {
+            break;
+        }
+        fileIdx++;
+    }
+    if (fileIdx < MAX_FILE_OPEN_ALL) {
+        printk("file %s is in use, not allowed to delete\n", pathName);
+        dirClose(record.parentDir);
+        return -1;
+    }
+    ASSERT(fileIdx == MAX_FILE_OPEN_ALL)
+    void* ioBuf = sysMalloc(2 * SECTOR_BYTE_SIZE);
+    if (ioBuf == NULL) {
+        printk("sysUnlink: ioBuf = sysMalloc(2 * SECTOR_BYTE_SIZE) failed\n");
+        dirClose(record.parentDir);
+        return -1;
+    }
+    Dir* parentDir = record.parentDir;
+    deleteDirEntry(curPart, parentDir, ino, ioBuf);
+    inodeRelease(curPart, ino);
+    sysFree(ioBuf);
+    dirClose(record.parentDir);
+    return 0;
+}
+
+int32 sysMkdir(const char* pathName) {
+    uint8 rollBackStep = 0;
+    void* ioBuf = sysMalloc(SECTOR_BYTE_SIZE * 2);
+    if (ioBuf == NULL) {
+        printk("sysMkdir: ioBuf = sysMalloc(SECTOR_BYTE_SIZE * 2) failed\n", pathName);
+        return -1;
+    }
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(PathSearchRecord));
+    int ino = searchFile(pathName, &record);
+    ASSERT(ino != 0)
+    printk("ino:%d", ino);
+    if (ino != -1) {
+        printk("sysMkdir: file or directory %s already exist!\n", pathName);
+        rollBackStep = 1;
+        goto rollback;
+    } else {
+        uint32 pathNameDepth = pathDepthCnt(pathName);
+        uint32 pathSearchedDepth = pathDepthCnt(record.searchPath);
+        if (pathNameDepth != pathSearchedDepth) {
+            printk("sysMkdir: can't make %s, subpath %s isn't exist!\n", pathName, record.searchPath);
+            rollBackStep = 1;
+            goto rollback;
+        }
+    }
+
+    Dir* parentDir = record.parentDir;
+    char* dirName = strrchr(record.searchPath, '/') + 1;
+    ino = inodeBitMapAlloc(curPart);
+    if (ino == -1) {
+        printk("sysMkdir: ino = inodeBitMapAlloc(curPart) failed\n");
+        rollBackStep = 1;
+        goto rollback;
+    }
+    Inode newDirInode;
+    inodeInit(ino, &newDirInode);
+    uint32 blockBitMapIdx = 0;
+    int32 blockLba = -1;
+    blockLba = blockBitMapAlloc(curPart);
+    if (blockLba == -1) {
+        printk("sysMkdir: blockLba = blockBitMapAlloc(curPart) failed\n");
+        rollBackStep = 2;
+        goto rollback;
+    }
+
+    newDirInode.block[0] = blockLba;
+    blockBitMapIdx = blockLbaToBitMapIdx(blockLba);
+    ASSERT(blockBitMapIdx!=0)
+    bitMapSync(curPart, blockBitMapIdx, BLOCK_BITMAP);
+
+    memset(ioBuf, 0, 2 * SECTOR_BYTE_SIZE);
+    DirEntry* curDe = (DirEntry*) ioBuf;
+
+    memcpy(curDe->fileName, ".", 1);
+    curDe->ino = ino;
+    curDe->fileType = FT_DIRECTORY;
+    curDe++;
+
+    memcpy(curDe->fileName, "..", 2);
+    curDe->ino = record.parentDir->inode->ino;
+    curDe->fileType = FT_DIRECTORY;
+
+    ideWrite(curPart->disk, newDirInode.block[0], ioBuf, 1);
+
+    newDirInode.size = 2 * curPart->superBlock->dirEntrySize;
+
+    DirEntry newDirEntry;
+    memset(&newDirEntry, 0, sizeof(DirEntry));
+    createDirEntry(dirName, ino, FT_DIRECTORY, &newDirEntry);
+    memset(ioBuf, 0, 2 * SECTOR_BYTE_SIZE);
+    if (!syncDirEntry(parentDir, &newDirEntry, ioBuf)) {
+        printk("sysMkdir: syncDirEntry(parentDir, &newDirEntry, ioBuf) failed\n");
+        rollBackStep = 2;
+        goto rollback;
+    }
+
+    memset(ioBuf, 0, 2 * SECTOR_BYTE_SIZE);
+    inodeSync(curPart, parentDir->inode, ioBuf);
+
+    memset(ioBuf, 0, 2 * SECTOR_BYTE_SIZE);
+    inodeSync(curPart, &newDirInode, ioBuf);
+
+    bitMapSync(curPart, ino, INODE_BITMAP);
+
+    sysFree(ioBuf);
+    dirClose(record.parentDir);
+    return 0;
+
+    rollback:
+    switch (rollBackStep) {
+        case 2:
+            bitMapSet(&curPart->inodeBitMap, ino, 0);
+            break;
+        case 1:
+            dirClose(record.parentDir);
+            break;
+    }
+    sysFree(ioBuf);
+    return -1;
+}
+
 void fsInit() {
     ASSERT(sizeof(SuperBlock) == SECTOR_BYTE_SIZE)
     SuperBlock* sb = (SuperBlock*) sysMalloc(SECTOR_BYTE_SIZE);
@@ -355,6 +499,7 @@ void fsInit() {
         ideRead(partition->disk, partition->lbaStart + 1, sb, 1);
         if (sb->magicNum == SUPER_BLOCK_MAGIC_NUM) {
             printk("%s has fileSystem\n", partition->name);
+//            partitionFormat(partition);
         } else {
             printk("format %s\n", partition->name);
             partitionFormat(partition);

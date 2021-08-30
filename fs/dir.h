@@ -37,4 +37,6 @@ void createDirEntry(char* fileName, uint32 ino, FileType fileType, DirEntry* de)
 bool syncDirEntry(Dir* parentDir, DirEntry* de, void* ioBuf);
 
 void printDirEntry(Dir* parentDir);
+
+bool deleteDirEntry(Partition* part, Dir* dir, uint32 ino, void* ioBuf);
 #endif

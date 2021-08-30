@@ -120,10 +120,6 @@ void inodeInit(uint32 ino, Inode* newInode) {
     }
 }
 
-void inodeDelete(Partition* part, uint32 ino, void* ioBuf) {
-
-}
-
 void inodeRelease(Partition* part, uint32 ino) {
     Inode* inodeToDel = inodeOpen(part, ino);
     ASSERT(inodeToDel->ino == ino)

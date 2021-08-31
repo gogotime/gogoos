@@ -75,6 +75,7 @@ void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func,
     pcb->ticks = priority;
     pcb->elapsedTicks = 0;
     pcb->pageDir = NULL;
+    pcb->cwdIno = 0;
     pcb->stackMagicNum = STACK_MAGIC_NUMBER;
 
     pcb->fdTable[0] = 0;
@@ -167,6 +168,7 @@ static void makeMainThread() {
     mainThread->ticks = 4;
     mainThread->elapsedTicks = 0;
     mainThread->pageDir = NULL;
+    mainThread->cwdIno = 0;
     mainThread->stackMagicNum = STACK_MAGIC_NUMBER;
 
     mainThread->fdTable[0] = 0;

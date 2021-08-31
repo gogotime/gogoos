@@ -553,6 +553,118 @@ int32 sysRmdir(const char* pathName) {
     return ret;
 }
 
+static uint32 getParentDirIno(uint32 childIno, void* ioBuf) {
+    Inode* childDirInode = inodeOpen(curPart, childIno);
+    uint32 blockLba = childDirInode->block[0];
+    ASSERT(blockLba >= curPart->superBlock->dataLbaStart)
+    inodeClose(childDirInode);
+    ideRead(curPart->disk, blockLba, ioBuf, 1);
+    DirEntry* de = (DirEntry*) ioBuf;
+    ASSERT(de[1].ino < 4096 && de[1].fileType == FT_DIRECTORY)
+    return de[1].ino;
+}
+
+static int32 getChildDirName(uint32 parentIno, uint32 childIno, char* path, void* ioBuf) {
+    Inode* parentDirInode = inodeOpen(curPart, parentIno);
+    uint8 blockIdx = 0;
+    uint32 blockCnt = 12;
+    uint32* allBlocks = (uint32*) sysMalloc(560);
+    if (allBlocks == NULL) {
+        printk("getChildDirName: allBlocks = (uint32*) sysMalloc(560); failed");
+        return -1;
+    }
+    while (blockIdx < 12) {
+        allBlocks[blockIdx] = parentDirInode->block[blockIdx];
+        blockIdx++;
+    }
+    if (parentDirInode->block[12] != 0) {
+        ideRead(curPart->disk, parentDirInode->block[12], allBlocks + 12, 1);
+        blockCnt = 140;
+    }
+    inodeClose(parentDirInode);
+    blockIdx = 0;
+    uint32 curDirEntryPos = 0;
+    uint32 dirEntryIdx = 0;
+    uint32 dirEntrySize = curPart->superBlock->dirEntrySize;
+    uint32 dirEntryCntPerSec = SECTOR_BYTE_SIZE / dirEntrySize;
+    DirEntry* de = (DirEntry*) ioBuf;
+    while (blockIdx < blockCnt) {
+        if (allBlocks[blockIdx] == 0) {
+            blockIdx++;
+            continue;
+        }
+        memset(de, 0, SECTOR_BYTE_SIZE);
+        ideRead(curPart->disk, allBlocks[blockIdx], de, 1);
+        dirEntryIdx = 0;
+        while (dirEntryIdx < dirEntryCntPerSec) {
+            if ((de + dirEntryIdx)->ino == childIno) {
+                strcat(path, "/");
+                strcat(path, (de + dirEntryIdx)->fileName);
+                sysFree(allBlocks);
+                return 0;
+            }
+            dirEntryIdx++;
+        }
+        blockIdx++;
+    }
+    sysFree(allBlocks);
+    return -1;
+}
+
+char* sysGetCwd(char* buf,uint32 size) {
+    ASSERT(buf != NULL)
+    void* ioBuf = sysMalloc(SECTOR_BYTE_SIZE);
+    if (ioBuf == NULL) {
+        return NULL;
+    }
+    TaskStruct* cur = getCurrentThread();
+    int32 parentIno = 0;
+    int32 childIno = cur->cwdIno;
+    ASSERT(childIno>=0 && childIno<4096)
+    if (childIno == 0) {
+        buf[0] = '/';
+        buf[1] = 0;
+        return buf;
+    }
+    char filePathReverse[MAX_PATH_LEN] = {0};
+    while (childIno != 0) {
+        parentIno = getParentDirIno(childIno, ioBuf);
+        if (getChildDirName(parentIno, childIno, filePathReverse, ioBuf)==-1) {
+            sysFree(ioBuf);
+            return NULL;
+        }
+        childIno = parentIno;
+    }
+    memset(buf, 0, size);
+    ASSERT(strlen(filePathReverse)<=size)
+    char* lastSlash;
+    while ((lastSlash = strrchr(filePathReverse, '/'))) {
+        uint16 len = strlen(buf);
+        strcpy(buf + len, lastSlash);
+        *lastSlash = 0;
+    }
+    sysFree(ioBuf);
+    return buf;
+
+}
+
+int32 sysChDir(const char* pathName) {
+    int32 ret = -1;
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(PathSearchRecord));
+    int32 ino = searchFile(pathName, &record);
+    if (ino != -1) {
+        if (record.fileType == FT_DIRECTORY) {
+            getCurrentThread()->cwdIno = ino;
+            ret = 0;
+        }else{
+            printk("sysChDir: %s is a file, not directory\n");
+        }
+    }
+    dirClose(record.parentDir);
+    return ret;
+}
+
 void fsInit() {
     ASSERT(sizeof(SuperBlock) == SECTOR_BYTE_SIZE)
     SuperBlock* sb = (SuperBlock*) sysMalloc(SECTOR_BYTE_SIZE);

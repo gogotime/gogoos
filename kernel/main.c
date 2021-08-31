@@ -57,15 +57,18 @@ int main() {
 //    sysMkdir("/dir1/dir2");
 //    sysMkdir("/dir1");
     Dir* root = sysOpenDir("/.");
-    sysMkdir("/dir3");
     DirEntry* de = NULL;
     while ((de = sysReadDir(root)) != NULL) {
         printk("%d %s\n", de->fileType, de->fileName);
     }
-    sysMkdir("/dir3/dir1");
-    sysRmdir("/dir3");
-    sysRmdir("/dir3/dir1");
-    sysRmdir("/dir3");
+
+    char cwdBuf[32] = {0};
+    sysGetCwd(cwdBuf, 32);
+    printk("cwd:%s\n", cwdBuf);
+    sysChDir("/dir1");
+    sysGetCwd(cwdBuf, 32);
+    printk("cwd:%s\n", cwdBuf);
+
     sysRewindDir(root);
     while ((de = sysReadDir(root)) != NULL) {
         printk("%d %s\n", de->fileType, de->fileName);

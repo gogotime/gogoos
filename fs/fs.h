@@ -58,5 +58,9 @@ void sysRewindDir(Dir* dir);
 
 int32 sysRmdir(const char* pathName);
 
+char* sysGetCwd(char* buf,uint32 size);
+
+int32 sysChDir(const char* pathName);
+
 void fsInit();
 #endif

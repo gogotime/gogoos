@@ -92,6 +92,7 @@ typedef struct {
     uint32* pageDir;
     MemBlockDesc umbdArr[MEM_BLOCK_DESC_CNT];
     VirtualAddrPool vap;
+    uint32 cwdIno;
     uint32 stackMagicNum;
 } TaskStruct;
 

@@ -5,6 +5,7 @@
 #include "inode.h"
 #include "dir.h"
 #include "file.h"
+
 #define MAX_FILE_PER_PART 4096
 #define SECTOR_BYTE_SIZE 512
 #define BITS_PER_SECTOR SECTOR_BYTE_SIZE*8
@@ -12,17 +13,22 @@
 #define MAX_PATH_LEN 512
 
 typedef enum {
-    SEEK_SET=1,
+    SEEK_SET = 1,
     SEEK_CUR,
     SEEK_END
-}SeekFlag;
-
+} SeekFlag;
 
 typedef struct {
     char searchPath[MAX_PATH_LEN];
     Dir* parentDir;
     FileType fileType;
-}PathSearchRecord;
+} PathSearchRecord;
+
+typedef struct {
+    uint32 ino;
+    uint32 size;
+    FileType fileType;
+} Stat;
 
 void partitionFormat(Partition* partition);
 
@@ -58,9 +64,12 @@ void sysRewindDir(Dir* dir);
 
 int32 sysRmdir(const char* pathName);
 
-char* sysGetCwd(char* buf,uint32 size);
+char* sysGetCwd(char* buf, uint32 size);
 
 int32 sysChDir(const char* pathName);
 
+int32 sysStat(const char* path, Stat* stat);
+
 void fsInit();
+
 #endif

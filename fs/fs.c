@@ -611,7 +611,7 @@ static int32 getChildDirName(uint32 parentIno, uint32 childIno, char* path, void
     return -1;
 }
 
-char* sysGetCwd(char* buf,uint32 size) {
+char* sysGetCwd(char* buf, uint32 size) {
     ASSERT(buf != NULL)
     void* ioBuf = sysMalloc(SECTOR_BYTE_SIZE);
     if (ioBuf == NULL) {
@@ -620,7 +620,7 @@ char* sysGetCwd(char* buf,uint32 size) {
     TaskStruct* cur = getCurrentThread();
     int32 parentIno = 0;
     int32 childIno = cur->cwdIno;
-    ASSERT(childIno>=0 && childIno<4096)
+    ASSERT(childIno >= 0 && childIno < 4096)
     if (childIno == 0) {
         buf[0] = '/';
         buf[1] = 0;
@@ -629,14 +629,14 @@ char* sysGetCwd(char* buf,uint32 size) {
     char filePathReverse[MAX_PATH_LEN] = {0};
     while (childIno != 0) {
         parentIno = getParentDirIno(childIno, ioBuf);
-        if (getChildDirName(parentIno, childIno, filePathReverse, ioBuf)==-1) {
+        if (getChildDirName(parentIno, childIno, filePathReverse, ioBuf) == -1) {
             sysFree(ioBuf);
             return NULL;
         }
         childIno = parentIno;
     }
     memset(buf, 0, size);
-    ASSERT(strlen(filePathReverse)<=size)
+    ASSERT(strlen(filePathReverse) <= size)
     char* lastSlash;
     while ((lastSlash = strrchr(filePathReverse, '/'))) {
         uint16 len = strlen(buf);
@@ -657,9 +657,34 @@ int32 sysChDir(const char* pathName) {
         if (record.fileType == FT_DIRECTORY) {
             getCurrentThread()->cwdIno = ino;
             ret = 0;
-        }else{
+        } else {
             printk("sysChDir: %s is a file, not directory\n");
         }
+    }
+    dirClose(record.parentDir);
+    return ret;
+}
+
+int32 sysStat(const char* path, Stat* stat) {
+    if (!strcmp(path, "/") || !strcmp(path, "/.") || !strcmp(path, "/..")) {
+        stat->fileType = FT_DIRECTORY;
+        stat->ino = 0;
+        stat->size = rootDir.inode->size;
+        return 0;
+    }
+    int32 ret = -1;
+    PathSearchRecord record;
+    memset(&record, 0, sizeof(PathSearchRecord));
+    int ino = searchFile(path, &record);
+    if (ino != -1) {
+        Inode* inode = inodeOpen(curPart,ino);
+        stat->size = inode->size;
+        inodeClose(inode);
+        stat->fileType = record.fileType;
+        stat->ino = ino;
+        ret = 0;
+    } else {
+        printk("sysStat: %s not found\n", path);
     }
     dirClose(record.parentDir);
     return ret;

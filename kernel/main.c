@@ -59,7 +59,7 @@ int main() {
     Dir* root = sysOpenDir("/.");
     DirEntry* de = NULL;
     while ((de = sysReadDir(root)) != NULL) {
-        printk("%d %s\n", de->fileType, de->fileName);
+        printk("%d:%d %s\n",de->ino, de->fileType, de->fileName);
     }
 
     char cwdBuf[32] = {0};
@@ -68,7 +68,9 @@ int main() {
     sysChDir("/dir1");
     sysGetCwd(cwdBuf, 32);
     printk("cwd:%s\n", cwdBuf);
-
+    Stat stat;
+    sysStat("/dir1", &stat);
+    printk("ino:%d\n", stat.ino);
     sysRewindDir(root);
     while ((de = sysReadDir(root)) != NULL) {
         printk("%d %s\n", de->fileType, de->fileName);

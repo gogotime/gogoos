@@ -13,6 +13,9 @@
 #define LOADER_BASE_ADDR 0x900
 #define MEMORY_DATA_ADDR 0x904
 
+#define USER_STACK_VADDR (0xc0000000 - 0x1000)
+#define USER_VADDR_START 0x8000
+
 // ---------- EFLAGS ----------
 
 #define EFLAGS_MBS (1<<1)

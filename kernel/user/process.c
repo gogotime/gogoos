@@ -4,11 +4,11 @@
 #include "../../device/console.h"
 #include "../../lib/string.h"
 #include "../../lib/debug.h"
+#include "../../lib/kernel/stdio.h"
 #include "process.h"
 #include "tss.h"
 
-#define USER_STACK_VADDR (0xc0000000 - 0x1000)
-#define USER_VADDR_START 0x1000
+
 
 extern void intrExit();
 
@@ -53,10 +53,11 @@ void processActivate(TaskStruct* ts) {
     }
 }
 
-uint32* pageDirCreate(void) {
+uint32* pageDirCreate() {
     uint32* pageDirVaddr = getKernelPages(1);
     if (pageDirVaddr == NULL) {
         consolePutString("pageDirCreate: getKernelPages failed\n");
+        return NULL;
     }
     memcpy((uint32*) ((uint32) pageDirVaddr + 0x300 * 4), (uint32*) (0xfffff000 + 0x300 * 4), 1024);
     uint32 pageDirRaddr = addrV2P((uint32) pageDirVaddr);
@@ -67,11 +68,9 @@ uint32* pageDirCreate(void) {
 void userVaddrBitMapInit(TaskStruct* userTs) {
     userTs->vap.startAddr = USER_VADDR_START;
     uint32 bmpPgCnt = DIV_ROUND_UP((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8, PG_SIZE);
-    consolePutUint32(bmpPgCnt);
     userTs->vap.bitMap.startAddr = getKernelPages(bmpPgCnt);
     userTs->vap.bitMap.length = (0xc0000000 - USER_VADDR_START) / PG_SIZE / 8;
     bitMapInit(&userTs->vap.bitMap);
-    consolePutUint32Hex(userTs->vap.bitMap.length);
 }
 
 static void userThread(ThreadFunc func, void* funcArg) {

@@ -226,24 +226,23 @@ void freePage(PoolFlag pf, void* virPageAddr, uint32 pgCnt) {
             ASSERT((paddr % PG_SIZE) == 0 && paddr > userPap.startAddr)
             freePhyAddr(paddr);
             unmapPageTable(vaddr);
-            vaddr+=PG_SIZE;
+            vaddr += PG_SIZE;
             cnt++;
         }
         freeVirAddr(pf, virPageAddr, pgCnt);
     } else {
         while (cnt < pgCnt) {
             paddr = addrV2P(vaddr);
-            ASSERT((paddr % PG_SIZE) == 0 )
+            ASSERT((paddr % PG_SIZE) == 0)
             ASSERT(paddr >= kernelPap.startAddr && paddr < userPap.startAddr)
             freePhyAddr(paddr);
             unmapPageTable(vaddr);
-            vaddr+=PG_SIZE;
+            vaddr += PG_SIZE;
             cnt++;
         }
         freeVirAddr(pf, virPageAddr, pgCnt);
     }
 }
-
 
 void* getKernelPages(uint32 pageCnt) {
     lockLock(&kernelPap.lock);
@@ -266,6 +265,7 @@ void* getUserPages(uint32 pageCnt) {
 }
 
 void* getOnePage(PoolFlag pf, uint32 vaddr) {
+    ASSERT(vaddr%PG_SIZE==0)
     PhysicalAddrPool* pap = pf == PF_KERNEL ? &kernelPap : &userPap;
     lockLock(&pap->lock);
     int32 bitIdx = -1;
@@ -295,6 +295,18 @@ void* getOnePage(PoolFlag pf, uint32 vaddr) {
     return (void*) vaddr;
 }
 
+void* getOnePageWithoutVBM(PoolFlag pf, uint32 vaddr) {
+    PhysicalAddrPool* pool = pf == PF_KERNEL ? &kernelPap : &userPap;
+    lockLock(&pool->lock);
+    void* paddr = allocPhyAddr(pool);
+    if (paddr == NULL) {
+        lockUnlock(&pool->lock);
+        return NULL;
+    }
+    mapPageTable((void*) vaddr, paddr);
+    lockUnlock(&pool->lock);
+    return (void*) vaddr;
+}
 
 void* sysMalloc(uint32 size) {
     PoolFlag pf;

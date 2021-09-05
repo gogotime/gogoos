@@ -1,5 +1,6 @@
 #include "../thread/thread.h"
 #include "../memory.h"
+#include "fork.h"
 #include "../../fs/fs.h"
 #include "../../lib/stdint.h"
 #include "../../lib/kernel/print.h"
@@ -17,5 +18,6 @@ void syscallInit() {
     syscallHandlerTable[SYS_WRITE] = (uint32) &sysWrite;
     syscallHandlerTable[SYS_MALLOC] = (uint32) &sysMalloc;
     syscallHandlerTable[SYS_FREE] = (uint32) &sysFree;
+    syscallHandlerTable[SYS_FORK] = (uint32) &sysFork;
     putString("syscallInit done");
 }

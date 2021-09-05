@@ -39,11 +39,15 @@ uint32* getPdePtr(uint32 vaddr);
 
 void* allocPage(PoolFlag pf, uint32 pageCnt);
 
+void freePage(PoolFlag pf, void* virPageAddr, uint32 pgCnt);
+
 void* getKernelPages(uint32 pageCnt);
 
 void* getUserPages(uint32 pageCnt);
 
 void* getOnePage(PoolFlag pf, uint32 vaddr);
+
+void* getOnePageWithoutVBM(PoolFlag pf, uint32 vaddr);
 
 uint32 addrV2P(uint32 vaddr);
 

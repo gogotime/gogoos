@@ -9,7 +9,7 @@ void pageDirActivate(TaskStruct* ts);
 
 void processActivate(TaskStruct* ts);
 
-uint32* pageDirCreate(void);
+uint32* pageDirCreate();
 
 void userVaddrBitMapInit(TaskStruct* userTs);
 

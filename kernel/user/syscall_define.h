@@ -5,7 +5,8 @@ typedef enum {
     SYS_GETPID,
     SYS_WRITE,
     SYS_MALLOC,
-    SYS_FREE
+    SYS_FREE,
+    SYS_FORK
 } SYSCALL;
 
 #endif

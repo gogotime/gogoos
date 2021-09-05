@@ -57,9 +57,10 @@ void schedule() {
     switchTo(cur, next);
 }
 
-static uint32 allocatePid(void) {
+static uint32 allocatePid() {
     static uint32 nextPid = 0;
     lockLock(&pidLock);
+//    putString("allocate pid\n");
     nextPid++;
     lockUnlock(&pidLock);
     return nextPid;
@@ -77,7 +78,7 @@ void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func,
     pcb->pageDir = NULL;
     pcb->cwdIno = 0;
     pcb->stackMagicNum = STACK_MAGIC_NUMBER;
-
+    pcb->parentPid = -1;
     pcb->fdTable[0] = 0;
     pcb->fdTable[1] = 1;
     pcb->fdTable[2] = 2;
@@ -169,6 +170,7 @@ static void makeMainThread() {
     mainThread->elapsedTicks = 0;
     mainThread->pageDir = NULL;
     mainThread->cwdIno = 0;
+    mainThread->parentPid = -1;
     mainThread->stackMagicNum = STACK_MAGIC_NUMBER;
 
     mainThread->fdTable[0] = 0;
@@ -186,6 +188,10 @@ static void makeMainThread() {
 
 uint32 sysGetPid() {
     return getCurrentThread()->pid;
+}
+
+int32 forkPid(){
+    return allocatePid();
 }
 
 void threadInit() {

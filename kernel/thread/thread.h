@@ -93,6 +93,7 @@ typedef struct {
     MemBlockDesc umbdArr[MEM_BLOCK_DESC_CNT];
     VirtualAddrPool vap;
     uint32 cwdIno;
+    int32 parentPid;
     uint32 stackMagicNum;
 } TaskStruct;
 
@@ -125,4 +126,6 @@ void threadBlock(TaskStatus status);
 void threadYield();
 
 uint32 sysGetPid();
+
+int32 forkPid();
 # endif

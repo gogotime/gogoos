@@ -9,4 +9,6 @@ void* malloc(uint32 size);
 
 void free(void* ptr);
 
+int32 fork();
+
 #endif

@@ -2,7 +2,7 @@
 #define __LIB_KERNEL_PRINT_H
 
 #include "../stdint.h"
-#include "asm/put_char.h"
+#include "asm/print.h"
 
 void putString(char* string);
 

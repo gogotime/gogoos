@@ -6,11 +6,48 @@ SELECTOR_DATA  equ (0x0002<<3)+TI_GDT+RPL0
 
 
 section .text
+global sysClear
 global setCursor
-global putChar
+global sysPutChar
+
+sysClear:
+    pushad
+    push gs
+
+    mov ax,SELECTOR_VIDEO
+    mov gs,ax
+
+    mov ebx,0
+    mov ecx,80*25
+.cls:
+    mov word [gs:ebx],0x0720
+    add ebx,2
+    loop .cls
+
+    mov ebx,0
+
+    ;set cursor location high
+    mov dx,0x3d4
+    mov al,0x0e
+    out dx,al
+    mov dx,0x3d5
+    mov al,bh
+    out dx,al
+    ;set cursor location low
+    mov dx,0x3d4
+    mov al,0x0f
+    out dx,al
+    mov dx,0x3d5
+    mov al,bl
+    out dx,al
+
+    pop gs
+    popad
+;    jmp $
+    ret
+
 
 setCursor:
-;set cursor location
     ;set cursor location high
     push eax
     push ebx
@@ -36,13 +73,11 @@ setCursor:
     pop eax
     ret
 
-putChar:
+sysPutChar:
     pushad
-    ;jmp $
     mov ax,SELECTOR_VIDEO
     mov gs,ax
 
-;get cursor location
     ;get cursor location high
     mov dx,0x3d4
     mov al,0x0e
@@ -117,7 +152,6 @@ putChar:
     mov ebx,1920
 
 .set_cursor:
-;set cursor location
     ;set cursor location high
     mov dx,0x3d4
     mov al,0x0e

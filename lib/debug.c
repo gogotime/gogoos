@@ -4,9 +4,9 @@
 void panicAndSpin1(const char* fileName, uint32 line, const char* funcName, const char* condition) {
     disableIntr();
     putString((char*) fileName);
-    putChar(':');
+    sysPutChar(':');
     putUint32(line);
-    putChar(':');
+    sysPutChar(':');
     putString((char*) funcName);
     putString(": panic: ");
     putString((char*) condition);

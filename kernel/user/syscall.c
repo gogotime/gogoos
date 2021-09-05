@@ -16,8 +16,11 @@ void syscallInit() {
     putString("syscallInit start");
     syscallHandlerTable[SYS_GETPID] = (uint32) &sysGetPid;
     syscallHandlerTable[SYS_WRITE] = (uint32) &sysWrite;
+    syscallHandlerTable[SYS_READ] = (uint32) &sysRead;
+    syscallHandlerTable[SYS_PUTCHAR] = (uint32) &sysPutChar;
     syscallHandlerTable[SYS_MALLOC] = (uint32) &sysMalloc;
     syscallHandlerTable[SYS_FREE] = (uint32) &sysFree;
     syscallHandlerTable[SYS_FORK] = (uint32) &sysFork;
+    syscallHandlerTable[SYS_CLEAR] = (uint32) &sysClear;
     putString("syscallInit done");
 }

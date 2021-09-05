@@ -220,10 +220,16 @@ static void intrKeyBoardHandler(uint8 intrNr) {
                 }
                 uint8 idx = (scanCode & 0x00ff);
                 char c = keymap[idx][shift];
+                if (ctrlStatus) {
+                    if (c == 'l' || c == 'L') {
+                        c = 'l' - 'a';
+                    }
+                    if (c == 'u' || c == 'U') {
+                        c = 'u' - 'a';
+                    }
+                }
                 if (c) {
-//                    putChar(c);
                     ioQueuePutChar(&keyboardBuf, c);
-
                 }
             }
         }

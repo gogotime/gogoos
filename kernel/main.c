@@ -2,11 +2,14 @@
 #include "../lib/kernel/io.h"
 #include "../lib/kernel/interrupt.h"
 #include "../lib/kernel/stdio.h"
+#include "../lib/kernel/asm/print.h"
 #include "../lib/structure/bitmap.h"
 #include "../lib/user/syscall.h"
 #include "../lib/string.h"
 #include "../lib/debug.h"
 #include "../lib/stdio.h"
+
+#include "../shell/shell.h"
 
 #include "../device/console.h"
 #include "../device/ide.h"
@@ -43,16 +46,17 @@ void testThread1(void* arg);
 
 void userProcess(void* arg);
 
+void init();
+
 volatile uint32 cnt = 1;
 extern Dir rootDir;
 extern Partition* curPart;
 
 int main() {
     initAll();
+    sysClear();
 //    threadStart("thread1", 4, testThread1, "a");
-//    threadStart("thread2", 4, testThread1, "a");
-    processStart(userProcess, "userproc1");
-//    processStart(userProcess, "userproc2");
+    processStart(init, "init");
     enableIntr();
     while (1);
     return 0;
@@ -63,12 +67,23 @@ void testThread1(void* arg) {
     while (1);
 }
 
+void init(){
+    uint32 pid = fork();
+    if (pid) {
+        while (1);
+    }else{
+        myShell();
+    }
+}
+
+
 void userProcess(void* arg) {
     int32 pid = fork();
     if (pid == -1) {
         printf("fork error\n");
     } else if (pid == 0) {
         printf("i'm child, my pid is %d\n", getPid());
+
     } else {
         printf("i'm father, my pid is %d, my child's pid is %d\n", getPid(),pid);
     }

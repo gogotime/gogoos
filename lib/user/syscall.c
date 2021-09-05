@@ -41,6 +41,10 @@ uint32 write(int32 fd, const void* buf, uint32 count) {
     return syscall3(SYS_WRITE, fd, buf, count);
 }
 
+uint32 read(int32 fd, const void* buf, uint32 count) {
+    return syscall3(SYS_READ, fd, buf, count);
+}
+
 void* malloc(uint32 size) {
     return (void*) syscall1(SYS_MALLOC, size);
 }
@@ -51,4 +55,12 @@ void free(void* ptr) {
 
 int32 fork() {
     return syscall0(SYS_FORK);
+}
+
+void clear(){
+    syscall0(SYS_CLEAR);
+}
+
+void putChar(char c){
+    syscall1(SYS_PUTCHAR, c);
 }

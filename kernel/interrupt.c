@@ -1,5 +1,6 @@
 #include "../lib/stdint.h"
 #include "../lib/kernel/print.h"
+#include "../lib/kernel/asm/print.h"
 #include "../lib/kernel/io.h"
 #include "../lib/kernel/interrupt.h"
 #include "../lib/debug.h"
@@ -35,8 +36,6 @@ typedef void (*IntrHandler)(uint8 intrNo);
 IntrHandler intrHandlerTable[IDT_DESC_CNT];
 static GateDesc idt[IDT_DESC_CNT];
 
-extern void setCursor(uint16 pos);
-
 static void defaultIntrHandler(uint8 intrNr) {
     if (intrNr == 0x27 || intrNr == 0x2f) {
         return;
@@ -44,7 +43,7 @@ static void defaultIntrHandler(uint8 intrNr) {
     setCursor(0);
     uint32 cursorPos = 0;
     while (cursorPos < 320) {
-        putChar(' ');
+        sysPutChar(' ');
         cursorPos++;
     }
     setCursor(0);

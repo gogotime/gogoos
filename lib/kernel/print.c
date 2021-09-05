@@ -1,17 +1,17 @@
-# include "asm/put_char.h"
+# include "asm/print.h"
 # include "../stdio.h"
 # include <stdarg.h>
 
 void putString(char* string) {
     while (*string) {
-        putChar(*string);
+        sysPutChar(*string);
         string++;
     }
 }
 
 void putUint32(uint32 val) {
     if (val == 0) {
-        putChar('0');
+        sysPutChar('0');
         return;
     }
     int8 idx = 0;
@@ -25,16 +25,16 @@ void putUint32(uint32 val) {
     }
     idx--;
     while (idx >= 0) {
-        putChar(buff[idx]);
+        sysPutChar(buff[idx]);
         idx--;
     }
 }
 
 void putUint32Hex(uint32 val) {
     if (val == 0) {
-        putChar('0');
-        putChar('x');
-        putChar('0');
+        sysPutChar('0');
+        sysPutChar('x');
+        sysPutChar('0');
         return;
     }
     int8 idx = 0;
@@ -47,13 +47,13 @@ void putUint32Hex(uint32 val) {
         idx++;
     }
     idx--;
-    putChar('0');
-    putChar('x');
+    sysPutChar('0');
+    sysPutChar('x');
     while (idx >= 0) {
         if (buff[idx] > '9') {
             buff[idx] += 7;
         }
-        putChar(buff[idx]);
+        sysPutChar(buff[idx]);
         idx--;
     }
 }

@@ -1,5 +1,5 @@
 #include "../lib/kernel/print.h"
-#include "../lib/kernel/asm/put_char.h"
+#include "../lib/kernel/asm/print.h"
 #include "../lib/stdint.h"
 #include "../kernel/thread/sync.h"
 #include <stdarg.h>
@@ -31,6 +31,6 @@ void consolePutUint32Hex(uint32 val) {
 
 void consolePutChar(char c) {
     lockLock(&consoleLock);
-    putChar(c);
+    sysPutChar(c);
     lockUnlock(&consoleLock);
 }

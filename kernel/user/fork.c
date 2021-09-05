@@ -121,6 +121,6 @@ int32 sysFork() {
     ASSERT(!listElemExist(&threadReadyList,&childThread->generalTag))
     listAppend(&threadReadyList, &childThread->generalTag);
     ASSERT(!listElemExist(&threadReadyList,&childThread->allListTag))
-    listAppend(&threadReadyList, &childThread->allListTag);
+    listAppend(&threadAllList, &childThread->allListTag);
     return childThread->pid;
 }

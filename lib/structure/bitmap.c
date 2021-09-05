@@ -1,6 +1,6 @@
 #include "../string.h"
 #include "bitmap.h"
-#include "../kernel/asm/put_char.h"
+#include "../kernel/asm/print.h"
 
 void bitMapInit(BitMap* bm) {
     memset(bm->startAddr, 0, bm->length);
@@ -79,11 +79,11 @@ void bitMapPrint(BitMap* bm) {
     while (byteIdx < bm->length) {
         uint8 bitIdx = 0;
         while (bitIdx < 8) {
-            putChar('0' + ((bm->startAddr[byteIdx] >> bitIdx) & 0x1));
+            sysPutChar('0' + ((bm->startAddr[byteIdx] >> bitIdx) & 0x1));
             bitIdx++;
         }
-        putChar(' ');
+        sysPutChar(' ');
         byteIdx++;
     }
-    putChar('\n');
+    sysPutChar('\n');
 }

@@ -9,6 +9,7 @@
 #include "../lib/debug.h"
 #include "../lib/kernel/stdio.h"
 #include "../lib/string.h"
+#include "../lib/structure/ioqueue.h"
 
 #define SUPER_BLOCK_MAGIC_NUM 0x20212021
 
@@ -16,6 +17,7 @@ Partition* curPart;
 extern List partitionList;
 extern Dir rootDir;
 extern File fileTable[MAX_FILE_OPEN_ALL];
+extern IOQueue keyboardBuf;
 
 void partitionFormat(Partition* partition) {
     uint32 bootSecCnt = 1;
@@ -220,6 +222,13 @@ int searchFile(const char* pathName, PathSearchRecord* record) {
     return de.ino;
 }
 
+static uint32 fdLocalToGlobal(uint32 localFd) {
+    TaskStruct* cur = getCurrentThread();
+    int32 globalFd = cur->fdTable[localFd];
+    ASSERT(globalFd >= 0 && globalFd < MAX_FILE_OPEN_ALL)
+    return (uint32) globalFd;
+}
+
 int32 sysOpen(const char* pathName, OFlags flags) {
     if (pathName[strlen(pathName) - 1] == '/') {
         printk("can't open directory %s with open(), use openDir() instead\n", pathName);
@@ -266,13 +275,6 @@ int32 sysOpen(const char* pathName, OFlags flags) {
     return fd;
 }
 
-static uint32 fdLocalToGlobal(uint32 localFd) {
-    TaskStruct* cur = getCurrentThread();
-    int32 globalFd = cur->fdTable[localFd];
-    ASSERT(globalFd >= 0 && globalFd < MAX_FILE_OPEN_ALL)
-    return (uint32) globalFd;
-}
-
 int32 sysClose(int32 fd) {
     int32 ret = 1;
     if (fd > 2) {
@@ -307,15 +309,25 @@ uint32 sysWrite(int32 fd, const void* buf, uint32 count) {
 }
 
 uint32 sysRead(int32 fd, const void* buf, uint32 count) {
-    if (fd < 0) {
-        printk("sysRead error: fd<0\n");
-        return -1;
-    }
     ASSERT(buf != NULL)
-    uint32 globalFd = fdLocalToGlobal(fd);
-    File* wf = &fileTable[globalFd];
-    uint32 bytesRead = fileRead(wf, buf, count);
-    return bytesRead;
+    int32 ret = -1;
+    if (fd < 0 || fd == stdout || fd == stderr) {
+        printk("sysRead error: fd < 0 || fd == stdout || fd == stderr\n");
+        return -1;
+    } else if (fd == stdin) {
+        char* dst =(char *) buf;
+        uint32 bytesRead = 0;
+        while (bytesRead < count) {
+            *dst = ioQueueGetChar(&keyboardBuf);
+            bytesRead++;
+            dst++;
+        }
+        ret = (bytesRead == 0) ? -1 : (int32) bytesRead;
+    }else{
+        uint32 globalFd = fdLocalToGlobal(fd);
+        ret = fileRead(&fileTable[globalFd], buf, count);
+    }
+    return ret;
 }
 
 int32 sysLseek(int32 fd, int32 offset, uint8 seekFlag) {
@@ -677,7 +689,7 @@ int32 sysStat(const char* path, Stat* stat) {
     memset(&record, 0, sizeof(PathSearchRecord));
     int ino = searchFile(path, &record);
     if (ino != -1) {
-        Inode* inode = inodeOpen(curPart,ino);
+        Inode* inode = inodeOpen(curPart, ino);
         stat->size = inode->size;
         inodeClose(inode);
         stat->fileType = record.fileType;

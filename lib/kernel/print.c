@@ -1,5 +1,5 @@
 # include "asm/print.h"
-# include "../stdio.h"
+# include "../user/stdio.h"
 # include <stdarg.h>
 
 void putString(char* string) {

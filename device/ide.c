@@ -127,7 +127,6 @@ static bool busyWait(Disk* hd) {
 void ideRead(Disk* hd, uint32 lba, void* buf, uint32 secCnt) {
     ASSERT(lba < MAX_LBA)
     ASSERT(secCnt > 0)
-    ASSERT(getIntrStatus()==INTR_ON)
     lockLock(&hd->channel->lock);
     selectDisk(hd);
 

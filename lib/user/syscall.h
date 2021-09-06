@@ -44,6 +44,8 @@ DirEntry* readDir(Dir* dir);
 
 void rewindDir(Dir* dir);
 
+int32 stat(const char* path, Stat* stat);
+
 void ps();
 
 #endif

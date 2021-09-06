@@ -7,7 +7,7 @@
 #include "../lib/user/syscall.h"
 #include "../lib/string.h"
 #include "../lib/debug.h"
-#include "../lib/stdio.h"
+#include "../lib/user/stdio.h"
 
 #include "../shell/shell.h"
 
@@ -56,8 +56,7 @@ int main() {
     initAll();
     sysClear();
 //    threadStart("thread1", 4, testThread1, "a");
-//    processStart(init, "init");
-    sysPs();
+    processStart(init, "init");
     enableIntr();
     while (1);
     return 0;

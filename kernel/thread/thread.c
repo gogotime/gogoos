@@ -50,11 +50,6 @@ void schedule() {
     threadTag = listPop(&threadReadyList);
     TaskStruct* next = elemToEntry(TaskStruct, generalTag, threadTag);
     next->status = TASK_RUNNING;
-//    putString("switch to:");
-//    putString(next->name);
-//    putString("   ");
-//    putUint32Hex((uint32) next);
-//    putString("\n");
     processActivate(next);
     switchTo(cur, next);
 }
@@ -62,7 +57,6 @@ void schedule() {
 static uint32 allocatePid() {
     static uint32 nextPid = 0;
     lockLock(&pidLock);
-//    putString("allocate pid\n");
     nextPid++;
     lockUnlock(&pidLock);
     return nextPid;
@@ -199,20 +193,17 @@ int32 forkPid() {
 static bool threadPrintFunc(ListElem* elem, int unusedArg) {
     TaskStruct* thread = elemToEntry(TaskStruct, allListTag, elem);
     char buf[16] = {' '};
-    memset(buf, ' ', 16);
+    memset(buf, ' ', 11);
     sprintk(buf, "%d", thread->pid);
-    sysWrite(1, buf, 16);
+    sysWrite(1, buf, 11);
 
     memset(buf, ' ', 16);
     if (thread->parentPid == -1) {
-        sysWrite(1, "NULL           ", 16);
+        sysWrite(1, "NULL       ", 11);
     }else{
         sprintk(buf, "%d", thread->parentPid);
-        sysWrite(1, buf, 16);
+        sysWrite(1, buf, 11);
     }
-//    memset(buf, ' ', 16);
-//    sprintk(buf, "%d", thread->parentPid);
-//    sysWrite(1, buf, 16);
 
 
     memset(buf, ' ', 16);
@@ -224,28 +215,32 @@ static bool threadPrintFunc(ListElem* elem, int unusedArg) {
     }
     sysWrite(1, buf, 16);
 
-    memset(buf, ' ', 16);
+    memset(buf, ' ', 11);
+    sprintk(buf, "%d", thread->priority);
+    sysWrite(1, buf, 11);
+
+    memset(buf, ' ', 11);
     sprintk(buf, "%d", thread->ticks);
-    sysWrite(1, buf, 16);
+    sysWrite(1, buf, 11);
 
     switch (thread->status) {
         case TASK_RUNNING:
-            sysWrite(1, "RUNNING        ", 16);
+            sysWrite(1, "RUNNING   ", 11);
             break;
         case TASK_READY:
-            sysWrite(1, "READY          ", 16);
+            sysWrite(1, "READY     ", 11);
             break;
         case TASK_BLOCKED:
-            sysWrite(1, "BLOCKED        ", 16);
+            sysWrite(1, "BLOCKED   ", 11);
             break;
         case TASK_WAITING:
-            sysWrite(1, "WAITING        ", 16);
+            sysWrite(1, "WAITING   ", 11);
             break;
         case TASK_HANGING:
-            sysWrite(1, "HANGING        ", 16);
+            sysWrite(1, "HANGING   ", 11);
             break;
         case TASK_DIED:
-            sysWrite(1, "DIED           ", 16);
+            sysWrite(1, "DIED      ", 11);
             break;
     }
     sysWrite(1, "\n", 1);
@@ -253,7 +248,7 @@ static bool threadPrintFunc(ListElem* elem, int unusedArg) {
 }
 
 void sysPs() {
-    char* title = "PID             PPID           NAME            TICKS           STATUS         \n";
+    char* title = "PID        PPID       NAME            PRIORITY   TICKS      STATUS\n";
     sysWrite(1, title, strlen(title));
     listTraversal(&threadAllList, threadPrintFunc, 0);
 }

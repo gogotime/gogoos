@@ -34,7 +34,7 @@ void partitionFormat(Partition* partition);
 
 static bool mountPartition(ListElem* elem, int arg);
 
-static char* pathParse(char* pathName, char* nameStore);
+char* pathParse(char* pathName, char* nameStore);
 
 int32 pathDepthCnt(const char* pathName);
 

@@ -318,7 +318,7 @@ int32 fileWrite(File* file, const void* buf, uint32 count) {
         }
         memcpy(ioBuf + secOffBytes, src, chunkSize);
         ideWrite(curPart->disk, secLba, ioBuf, 1);
-        printk("file write at lba %x\n", secLba);
+//        printk("file write at lba %x\n", secLba);
         src += chunkSize;
         file->fdInode->size += chunkSize;
         file->fdPos += chunkSize;

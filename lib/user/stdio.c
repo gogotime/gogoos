@@ -1,6 +1,6 @@
-#include "string.h"
-#include "stdint.h"
-#include "user/syscall.h"
+#include "../string.h"
+#include "../stdint.h"
+#include "syscall.h"
 
 
 //#define va_start(ap, v) ap=(va_list)&v
@@ -104,6 +104,13 @@ uint32 vsprintf(char* buf, const char* format, va_list ap) {
     }
     return strlen(buf);
 };
+
+void sprintf(char* buf, const char* format, ...){
+    va_list args;
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+}
 
 uint32 printf(const char* format, ...) {
     va_list args;

@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include "../stdio.h"
+#include "../user/stdio.h"
 #include "../../device/console.h"
 
 void printk(const char* format, ...) {

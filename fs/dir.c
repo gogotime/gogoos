@@ -74,6 +74,7 @@ bool searchDirEntry(Partition* part, Dir* dir, const char* name, DirEntry* de) {
 
 void dirClose(Dir* dir) {
     if (dir == &rootDir) {
+//        dir->dirPos = 0;
         return;
     }
     inodeClose(dir->inode);

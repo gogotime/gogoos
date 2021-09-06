@@ -142,7 +142,7 @@ static bool mountPartition(ListElem* elem, int arg) {
     return true;
 }
 
-static char* pathParse(char* pathName, char* nameStore) {
+char* pathParse(char* pathName, char* nameStore) {
     if (pathName[0] == '/') {
         while (*(++pathName) == '/');
     }
@@ -260,13 +260,14 @@ int32 sysOpen(const char* pathName, OFlags flags) {
     }
     switch (flags & O_CREAT) {
         case O_CREAT:
-            printk("creating file\n");
+//            printk("creating file\n");
             fd = fileCreate(record.parentDir, fileName, flags);
             dirClose(record.parentDir);
             break;
         default:
-            printk("sysOpen no create\n");
+//            printk("sysOpen no create\n");
             fd = fileOpen(ino, flags);
+            dirClose(record.parentDir);
     }
     return fd;
 }
@@ -507,10 +508,10 @@ Dir* sysOpenDir(const char* pathName) {
     int32 ino = searchFile(pathName, &record);
     Dir* ret = NULL;
     if (ino == -1) {
-        printk("sysOpenDir: directory %s isn't existing\n", pathName);
+//        printk("sysOpenDir: directory %s isn't existing\n", pathName);
     } else {
         if (record.fileType == FT_REGULAR) {
-            printk("sysOpenDir: %s is a file, not directory\n", pathName);
+//            printk("sysOpenDir: %s is a file, not directory\n", pathName);
         } else if (record.fileType == FT_DIRECTORY) {
             ret = dirOpen(curPart, ino);
         }
@@ -692,7 +693,7 @@ int32 sysStat(const char* path, Stat* stat) {
         stat->ino = ino;
         ret = 0;
     } else {
-        printk("sysStat: %s not found\n", path);
+//        printk("sysStat: %s not found\n", path);
     }
     dirClose(record.parentDir);
     return ret;
@@ -707,7 +708,7 @@ void fsInit() {
         ideRead(partition->disk, partition->lbaStart + 1, sb, 1);
         if (sb->magicNum == SUPER_BLOCK_MAGIC_NUM) {
             printk("%s has fileSystem\n", partition->name);
-//            partitionFormat(partition);
+            partitionFormat(partition);
         } else {
             printk("format %s\n", partition->name);
             partitionFormat(partition);

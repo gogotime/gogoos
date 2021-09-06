@@ -123,6 +123,10 @@ void rewindDir(Dir* dir){
     syscall1(SYS_REWINDDIR, dir);
 }
 
+int32 stat(const char* path, Stat* stat){
+    return syscall2(SYS_STAT, path, stat);
+}
+
 void ps(){
     syscall0(SYS_PS);
 }

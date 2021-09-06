@@ -53,14 +53,10 @@ void partitionFormat(Partition* partition) {
 
     printk("    %s info:\n", partition->name);
     printk("        secCnt:%d\n", sb.secCnt);
-//    printk("        inodeCnt:%d\n", sb.inodeCnt);
     printk("        partLbaStart:%x\n", sb.partLbaStart);
     printk("        blockBitMapLbaStart:%x\n", sb.blockBitMapLbaStart);
     printk("        blockBitMapSecCnt:%d\n", sb.blockBitMapSecCnt);
     printk("        inodeBitMapLbaStart:%x\n", sb.inodeBitMapLbaStart);
-//    printk("        inodeBitMapSecCnt:%d\n", sb.inodeBitMapSecCnt);
-//    printk("        inodeTableLbaStart:%x\n", sb.inodeTableLbaStart);
-//    printk("        inodeTableSecCnt:%d\n", sb.inodeTableSecCnt);
     printk("        dataLbaStart:%x\n", sb.dataLbaStart);
 
     Disk* hd = partition->disk;

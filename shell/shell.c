@@ -3,6 +3,7 @@
 #include "../lib/debug.h"
 #include "../lib/string.h"
 #include "../fs/file.h"
+#include "../fs/fs.h"
 
 
 #define CMD_LEN 128
@@ -53,15 +54,63 @@ static void readLine(char* buf, int32 count) {
     printf("readline:shell input out of length");
 }
 
-void myShell(){
+static int32 cmdParse(char* cmdStr, char** argv, char token) {
+    ASSERT(cmdStr != NULL)
+    int32 argIdx = 0;
+    while (argIdx < MAX_ARG_NUM) {
+        argv[argIdx] = NULL;
+        argIdx++;
+    }
+    char* next = cmdStr;
+    int32 argc = 0;
+    while (*next) {
+        while (*next == token) {
+            next++;
+        }
+        if (*next == 0) {
+            break;
+        }
+        argv[argc] = next;
+        while (*next && *next != token) {
+            next++;
+        }
+        if (*next) {
+            *next++ = 0;
+        }
+        if (argc > MAX_ARG_NUM) {
+            return -1;
+        }
+        argc++;
+    }
+    return argc;
+}
+
+char* argv[MAX_ARG_NUM];
+int32 argc = -1;
+
+void myShell() {
     cwdCache[0] = '/';
+    cwdCache[1]=0;
     while (1) {
         printPrompt();
+//        memset(finalPath, 0, MAX_PATH_LEN);
         memset(cmdLine, 0, CMD_LEN);
         readLine(cmdLine, CMD_LEN);
         if (cmdLine[0] == 0) {
             continue;
         }
+        argc = -1;
+        argc = cmdParse(cmdLine, argv, ' ');
+        if (argc == -1) {
+            printf(" num of arg exceeded!\n");
+            continue;
+        }
+        int32 argIdx = 0;
+        while (argIdx < argc) {
+            printf("%s ", argv[argIdx]);
+            argIdx++;
+        }
+        printf("\n");
     }
     PANIC("myShell:should not be here\n")
 }

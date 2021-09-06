@@ -128,4 +128,7 @@ void threadYield();
 uint32 sysGetPid();
 
 int32 forkPid();
+
+void sysPs();
+
 # endif

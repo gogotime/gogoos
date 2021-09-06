@@ -1,10 +1,12 @@
 #include "../../lib/string.h"
 #include "../../lib/kernel/print.h"
+#include "../../lib/kernel/stdio.h"
 #include "../../lib/debug.h"
 #include "thread.h"
 #include "../global.h"
 #include "../memory.h"
 #include "../user/process.h"
+#include "../../fs/fs.h"
 
 
 TaskStruct* mainThread;
@@ -190,8 +192,70 @@ uint32 sysGetPid() {
     return getCurrentThread()->pid;
 }
 
-int32 forkPid(){
+int32 forkPid() {
     return allocatePid();
+}
+
+static bool threadPrintFunc(ListElem* elem, int unusedArg) {
+    TaskStruct* thread = elemToEntry(TaskStruct, allListTag, elem);
+    char buf[16] = {' '};
+    memset(buf, ' ', 16);
+    sprintk(buf, "%d", thread->pid);
+    sysWrite(1, buf, 16);
+
+    memset(buf, ' ', 16);
+    if (thread->parentPid == -1) {
+        sysWrite(1, "NULL           ", 16);
+    }else{
+        sprintk(buf, "%d", thread->parentPid);
+        sysWrite(1, buf, 16);
+    }
+//    memset(buf, ' ', 16);
+//    sprintk(buf, "%d", thread->parentPid);
+//    sysWrite(1, buf, 16);
+
+
+    memset(buf, ' ', 16);
+    sprintk(buf, "%s", thread->name);
+    for (int32 i = 0; i < 16; i++) {
+        if (buf[i] == 0) {
+            buf[i] = ' ';
+        }
+    }
+    sysWrite(1, buf, 16);
+
+    memset(buf, ' ', 16);
+    sprintk(buf, "%d", thread->ticks);
+    sysWrite(1, buf, 16);
+
+    switch (thread->status) {
+        case TASK_RUNNING:
+            sysWrite(1, "RUNNING        ", 16);
+            break;
+        case TASK_READY:
+            sysWrite(1, "READY          ", 16);
+            break;
+        case TASK_BLOCKED:
+            sysWrite(1, "BLOCKED        ", 16);
+            break;
+        case TASK_WAITING:
+            sysWrite(1, "WAITING        ", 16);
+            break;
+        case TASK_HANGING:
+            sysWrite(1, "HANGING        ", 16);
+            break;
+        case TASK_DIED:
+            sysWrite(1, "DIED           ", 16);
+            break;
+    }
+    sysWrite(1, "\n", 1);
+    return false;
+}
+
+void sysPs() {
+    char* title = "PID             PPID           NAME            TICKS           STATUS         \n";
+    sysWrite(1, title, strlen(title));
+    listTraversal(&threadAllList, threadPrintFunc, 0);
 }
 
 void threadInit() {

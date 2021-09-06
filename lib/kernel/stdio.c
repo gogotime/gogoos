@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include "../stdio.h"
 #include "../../device/console.h"
+
 void printk(const char* format, ...) {
     va_list args;
     va_start(args, format);

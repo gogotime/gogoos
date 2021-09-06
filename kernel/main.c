@@ -56,7 +56,8 @@ int main() {
     initAll();
     sysClear();
 //    threadStart("thread1", 4, testThread1, "a");
-    processStart(init, "init");
+//    processStart(init, "init");
+    sysPs();
     enableIntr();
     while (1);
     return 0;

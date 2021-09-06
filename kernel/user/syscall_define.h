@@ -4,12 +4,26 @@
 typedef enum {
     SYS_GETPID,
     SYS_WRITE,
-    SYS_READ,
-    SYS_PUTCHAR,
     SYS_MALLOC,
     SYS_FREE,
     SYS_FORK,
-    SYS_CLEAR
+    SYS_READ,
+    SYS_PUTCHAR,
+    SYS_CLEAR,
+    SYS_OPEN,
+    SYS_CLOSE,
+    SYS_LSEEK,
+    SYS_UNLINK,
+    SYS_MKDIR,
+    SYS_GETCWD,
+    SYS_OPENDIR,
+    SYS_CLOSEDIR,
+    SYS_CHDIR,
+    SYS_RMDIR,
+    SYS_READDIR,
+    SYS_REWINDDIR,
+    SYS_STAT,
+    SYS_PS
 } SYSCALL;
 
 #endif

@@ -149,7 +149,7 @@ int32 sysExecv(const char* path, char* argv[16]) {
     if (entryPoint == -1) {
         return -1;
     }
-    printk("entry point:%x", entryPoint);
+    printk("entry point:%x\n", entryPoint);
 
 //    memcpy(cur->name, path, 16);
 //    cur->name[15] = 0;
@@ -166,8 +166,8 @@ int32 sysExecv(const char* path, char* argv[16]) {
 //    procStack->esp = (void*) ((uint32) getOnePage(PF_USER, USER_STACK_VADDR) + PG_SIZE);
     ASSERT(procStack->esp != NULL)
     procStack->ss = SELECTOR_U_DATA;
-    printk("eip:%x", procStack->eip);
-    printk("esp:%x", procStack->esp);
+    printk("eip:%x \n", procStack->eip);
+    printk("esp:%x \n", procStack->esp);
     asm volatile ("movl %0,%%esp;"
                   "jmp intrExit;"
     :

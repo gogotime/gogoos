@@ -342,7 +342,8 @@ int32 fileRead(File* file, const void* buf, uint32 count) {
             return -1;
         }
     }
-    uint8* ioBuf = sysMalloc(BLOCK_BYTE_SIZE);
+
+    uint8* ioBuf = sysMalloc(2 * SECTOR_BYTE_SIZE);
     if (ioBuf == NULL) {
         printk("fileRead: ioBuf = sysMalloc(BLOCK_BYTE_SIZE) failed");
         return -1;
@@ -354,7 +355,7 @@ int32 fileRead(File* file, const void* buf, uint32 count) {
     }
     uint32 blockReadStartIdx = file->fdPos / BLOCK_BYTE_SIZE;
     uint32 blockReadEndIdx = (file->fdPos + size) / BLOCK_BYTE_SIZE;
-    uint32 readBlocks = blockReadStartIdx - blockReadStartIdx;
+    uint32 readBlocks = blockReadEndIdx - blockReadStartIdx;
     ASSERT(blockReadStartIdx < 140 && blockReadEndIdx < 140)
     int32 indirectBlockTable;
     uint32 blockIdx;
@@ -391,13 +392,12 @@ int32 fileRead(File* file, const void* buf, uint32 count) {
         }
     }
 
-
     uint32 secIdx;
     uint32 secLba;
     uint32 secOffBytes;
     uint32 secLeftBytes;
     uint32 chunkSize;
-    uint32 bytesRead=0;
+    uint32 bytesRead = 0;
 
     while (bytesRead < size) {
         secIdx = file->fdPos / BLOCK_BYTE_SIZE;
@@ -405,15 +405,14 @@ int32 fileRead(File* file, const void* buf, uint32 count) {
         secOffBytes = file->fdPos % BLOCK_BYTE_SIZE;
         secLeftBytes = BLOCK_BYTE_SIZE - secOffBytes;
         chunkSize = sizeLeft < secLeftBytes ? sizeLeft : secLeftBytes;
-
         ideRead(curPart->disk, secLba, ioBuf, 1);
-        memcpy(dst, ioBuf+secOffBytes, chunkSize);
+        memcpy(dst, ioBuf + secOffBytes, chunkSize);
         dst += chunkSize;
         file->fdPos += chunkSize;
         bytesRead += chunkSize;
         sizeLeft -= chunkSize;
     }
-    sysFree(ioBuf);
-    sysFree(allBlocks);
+//    sysFree(ioBuf);
+//    sysFree(allBlocks);
     return bytesRead;
 }

@@ -48,4 +48,6 @@ int32 stat(const char* path, Stat* stat);
 
 void ps();
 
+int32 execv(const char* path, char* argv[16]);
+
 #endif

@@ -18,6 +18,7 @@
 
 #include "../fs/fs.h"
 
+#include "global.h"
 #include "interrupt.h"
 #include "memory.h"
 #include "thread/thread.h"
@@ -48,14 +49,36 @@ void userProcess(void* arg);
 
 void init();
 
-volatile uint32 cnt = 1;
 extern Dir rootDir;
 extern Partition* curPart;
+extern IDEChannel ideChannel[2];
 
 int main() {
     initAll();
+    uint32 fileSize = 9052;
+    uint32 secCnt = DIV_ROUND_UP(fileSize, SECTOR_BYTE_SIZE);
+    Disk* sda = &ideChannel[0].devices[0];
+    void* buf = sysMalloc(secCnt * SECTOR_BYTE_SIZE);
+    if (buf == NULL) {
+        printk("main: buf = sysMalloc(secCnt * SECTOR_BYTE_SIZE) failed\n");
+        while (1);
+    }
+    ideRead(sda, 400, buf, secCnt);
+    int32 fd = sysOpen("/t1", O_CREAT | O_RDWR);
+
+    if (fd == -1) {
+        printk("create file test1 failed\n");
+        while (1);
+    }
+
+    if (sysWrite(fd, buf, fileSize) == -1) {
+        printk("write file test1 failed\n");
+        while (1);
+    }
+
+    sysClose(fd);
+    sysFree(buf);
     sysClear();
-//    threadStart("thread1", 4, testThread1, "a");
     processStart(init, "init");
     enableIntr();
     while (1);
@@ -67,11 +90,11 @@ void testThread1(void* arg) {
     while (1);
 }
 
-void init(){
+void init() {
     uint32 pid = fork();
     if (pid) {
         while (1);
-    }else{
+    } else {
         myShell();
     }
 }
@@ -85,7 +108,7 @@ void userProcess(void* arg) {
         printf("i'm child, my pid is %d\n", getPid());
 
     } else {
-        printf("i'm father, my pid is %d, my child's pid is %d\n", getPid(),pid);
+        printf("i'm father, my pid is %d, my child's pid is %d\n", getPid(), pid);
     }
     while (1);
 }

@@ -135,10 +135,24 @@ void myShell() {
         }else if (!strcmp("rf", argv[0])) {
             buildinRf(argc, argv);
         }else {
+            char finalPath[MAX_PATH_LEN];
+            makeClearAbsPath(argv[0], finalPath);
+            argv[0] = finalPath;
+            Stat fileStat;
+            memset(&fileStat, 0, sizeof(Stat));
+            if (stat(finalPath, &fileStat) == -1) {
+                printf("shell: no such file %s\n", finalPath);
+            }else{
+                int32 pid = fork();
+                if (pid) {
+                    while (1);
+                } else {
+                    execv(finalPath, argv);
+                }
+            }
             int32 argIdx = 0;
             while (argIdx < argc) {
-                makeClearAbsPath(argv[argIdx], buf);
-                printf("%s -> %s", argv[argIdx], buf);
+                argv[argc] = NULL;
                 argIdx++;
             }
             printf("\n");

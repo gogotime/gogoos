@@ -4,6 +4,6 @@
 #include "../../lib/stdint.h"
 #include "../thread/thread.h"
 
-int32 sysFork();
+int32 sysExecv(const char* path, char* argv[16]) ;
 
 #endif

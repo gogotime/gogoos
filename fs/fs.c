@@ -273,7 +273,7 @@ int32 sysOpen(const char* pathName, OFlags flags) {
 }
 
 int32 sysClose(int32 fd) {
-    int32 ret = 1;
+    int32 ret = -1;
     if (fd > 2) {
         uint32 globalFd = fdLocalToGlobal(fd);
         ret = fileClose(&fileTable[globalFd]);
@@ -287,10 +287,11 @@ uint32 sysWrite(int32 fd, const void* buf, uint32 count) {
         printk("sysWrite error: fd<0\n");
         return -1;
     }
-    if (fd == stdout) {
-        char tmpBuf[1024] = {0};
+    if (fd == stdout || fd == stderr) {
+        ASSERT(count<=1024)
+        char tmpBuf[1024];
+        memset(tmpBuf, 0, 1024);
         memcpy(tmpBuf, buf, count);
-        ASSERT(count <= 1024)
         consolePutString(tmpBuf);
         return count;
     }
@@ -312,7 +313,7 @@ uint32 sysRead(int32 fd, const void* buf, uint32 count) {
         printk("sysRead error: fd < 0 || fd == stdout || fd == stderr\n");
         return -1;
     } else if (fd == stdin) {
-        char* dst =(char *) buf;
+        char* dst = (char*) buf;
         uint32 bytesRead = 0;
         while (bytesRead < count) {
             *dst = ioQueueGetChar(&keyboardBuf);
@@ -320,7 +321,7 @@ uint32 sysRead(int32 fd, const void* buf, uint32 count) {
             dst++;
         }
         ret = (bytesRead == 0) ? -1 : (int32) bytesRead;
-    }else{
+    } else {
         uint32 globalFd = fdLocalToGlobal(fd);
         ret = fileRead(&fileTable[globalFd], buf, count);
     }

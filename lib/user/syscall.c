@@ -131,3 +131,6 @@ void ps(){
     syscall0(SYS_PS);
 }
 
+int32 execv(const char* path, char* argv[16]) {
+    return syscall2(SYS_EXECV, path, argv);
+}

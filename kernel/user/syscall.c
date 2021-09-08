@@ -1,6 +1,7 @@
 #include "../thread/thread.h"
 #include "../memory.h"
 #include "fork.h"
+#include "exec.h"
 #include "../../fs/fs.h"
 #include "../../lib/stdint.h"
 #include "../../lib/kernel/print.h"
@@ -36,5 +37,6 @@ void syscallInit() {
     syscallHandlerTable[SYS_REWINDDIR] = (uint32) &sysRewindDir;
     syscallHandlerTable[SYS_STAT] = (uint32) &sysStat;
     syscallHandlerTable[SYS_PS] = (uint32) &sysPs;
+    syscallHandlerTable[SYS_EXECV] = (uint32) &sysExecv;
     putString("syscallInit done");
 }

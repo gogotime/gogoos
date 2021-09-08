@@ -23,7 +23,8 @@ typedef enum {
     SYS_READDIR,
     SYS_REWINDDIR,
     SYS_STAT,
-    SYS_PS
+    SYS_PS,
+    SYS_EXECV
 } SYSCALL;
 
 #endif

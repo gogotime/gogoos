@@ -49,6 +49,21 @@ typedef enum {
     PT_PHDR,
 } SegmentType;
 
+static void printHex80(char* start) {
+    uint8 cnt = 0;
+    while (cnt < 80) {
+        if (cnt % 10 == 0 && cnt != 0) {
+            sysWrite(1, "\n", 1);
+        }
+        char buf[5] = {' '};
+        memset(buf, ' ', 5);
+        sprintk(buf, "%x ", start[cnt] & 0xff);
+        sysWrite(1, buf, 5);
+        cnt++;
+    }
+}
+
+
 static bool segmentLoad(int32 fd, uint32 offset, uint32 fileSize, uint32 vaddr) {
 
     uint32 vaddrFirstPage = vaddr & 0xfffff000;
@@ -74,14 +89,9 @@ static bool segmentLoad(int32 fd, uint32 offset, uint32 fileSize, uint32 vaddr) 
         vaddrPage += PG_SIZE;
         pageIdx++;
     }
-    printk("occupyPages:%d\n", occupyPages);
-    printk("fileSize:%x\n", fileSize);
-    printk("vaddr:%x\n", vaddr);
-    printk("offset:%x\n", offset);
-    printk("vaddrFirstPage:%x\n", vaddrFirstPage);
-    printk("sizeInFirstPage:%x\n", sizeInFirstPage);
     sysLseek(fd, offset, SEEK_SET);
-    sysRead(fd, (void*) vaddr, 0);
+    sysRead(fd, (void*) vaddr, fileSize);
+//    printHex80((char*) vaddr);
     return true;
 }
 
@@ -116,7 +126,7 @@ static int32 load(const char* pathName) {
 
     uint32 programIdx = 0;
     while (programIdx < elfHeader.e_phnum) {
-        printk("programIdx:%d\n", programIdx);
+//        printk("programIdx:%d\n", programIdx);
         memset(&programHeader, 0, programHeaderSize);
         sysLseek(fd, programHeaderOffset, SEEK_SET);
         if (sysRead(fd, &programHeader, programHeaderSize) != programHeaderSize) {
@@ -149,7 +159,7 @@ int32 sysExecv(const char* path, char* argv[16]) {
     if (entryPoint == -1) {
         return -1;
     }
-    printk("entry point:%x\n", entryPoint);
+//    printk("entry point:%x\n", entryPoint);
 
 //    memcpy(cur->name, path, 16);
 //    cur->name[15] = 0;
@@ -158,16 +168,11 @@ int32 sysExecv(const char* path, char* argv[16]) {
     IntrStack* procStack = (IntrStack*) (((uint32) cur) + PG_SIZE - sizeof(IntrStack));
     procStack->edi = procStack->esi = procStack->ebp = procStack->espDummy = 0;
     procStack->ebx = procStack->edx = procStack->ecx = procStack->eax = 0;
-    procStack->gs = 0;
-    procStack->ds = procStack->es = procStack->fs = SELECTOR_U_DATA;
     procStack->eip = (void*) entryPoint;
-    procStack->cs = SELECTOR_U_CODE;
-    procStack->eflags = (EFLAGS_IOPL_0 | EFLAGS_MBS | EFLAGS_IF_1);
 //    procStack->esp = (void*) ((uint32) getOnePage(PF_USER, USER_STACK_VADDR) + PG_SIZE);
     ASSERT(procStack->esp != NULL)
-    procStack->ss = SELECTOR_U_DATA;
-    printk("eip:%x \n", procStack->eip);
-    printk("esp:%x \n", procStack->esp);
+//    printk("eip:%x \n", procStack->eip);
+//    printk("esp:%x \n", procStack->esp);
     asm volatile ("movl %0,%%esp;"
                   "jmp intrExit;"
     :

@@ -319,7 +319,6 @@ void threadInit() {
     listInit(&threadReadyList);
     pidPoolInit();
 
-    processStart(init, "init");
     makeMainThread();
     idleThread = threadStart("idle", 1, idleThreadFunc, NULL);
     putString("threadInit done\n");

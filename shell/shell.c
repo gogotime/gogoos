@@ -15,7 +15,7 @@ char cwdCache[MAX_PATH_LEN] = {0};
 
 void printPrompt() {
     getCwd(cwdCache, MAX_PATH_LEN);
-    printf("[galamo@localhost %s]$ ", cwdCache);
+    printf("[pyro %s]$ ", cwdCache);
 }
 
 static void readLine(char* buf, int32 count) {
@@ -99,7 +99,6 @@ void myShell() {
     clear();
     while (1) {
         printPrompt();
-//        memset(finalPath, 0, MAX_PATH_LEN);
         memset(cmdLine, 0, CMD_LEN);
         readLine(cmdLine, CMD_LEN);
         if (cmdLine[0] == 0) {
@@ -140,7 +139,7 @@ void myShell() {
         }else {
             char finalPath[MAX_PATH_LEN];
             makeClearAbsPath(argv[0], finalPath);
-//            argv[0] = finalPath;
+
             Stat fileStat;
             memset(&fileStat, 0, sizeof(Stat));
             if (stat(finalPath, &fileStat) == -1) {

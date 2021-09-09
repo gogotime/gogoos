@@ -79,13 +79,17 @@ int main() {
     sysClose(fd);
     sysFree(buf);
     sysClear();
-    processStart(init, "init");
+
     enableIntr();
+    threadUnblock(pidToThread(1));
+    threadExit(getCurrentThread(), true);
+    printk("main exit failed: should not be here\n");
     while (1);
     return 0;
 }
 
 void init() {
+
     uint32 pid = fork();
     if (pid) {
         int status;

@@ -28,6 +28,7 @@ PidPool pidPool;
 
 
 extern void switchTo(TaskStruct* cur, TaskStruct* next);
+extern void init();
 
 TaskStruct* getCurrentThread() {
     uint32 esp;
@@ -317,6 +318,8 @@ void threadInit() {
     listInit(&threadAllList);
     listInit(&threadReadyList);
     pidPoolInit();
+
+    processStart(init, "init");
     makeMainThread();
     idleThread = threadStart("idle", 1, idleThreadFunc, NULL);
     putString("threadInit done\n");

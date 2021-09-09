@@ -96,6 +96,7 @@ char* argv[MAX_ARG_NUM];
 int32 argc = -1;
 
 void myShell() {
+    clear();
     while (1) {
         printPrompt();
 //        memset(finalPath, 0, MAX_PATH_LEN);

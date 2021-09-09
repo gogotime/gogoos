@@ -13,11 +13,8 @@ typedef struct {
 } Arena;
 
 MemBlockDesc kmbdArr[MEM_BLOCK_DESC_CNT];
-
-
 PhysicalAddrPool kernelPap, userPap;
 VirtualAddrPool kernelVap;
-
 
 static void memPoolInit(uint32 allMem) {
     putString("memPoolInit start\n");
@@ -91,7 +88,6 @@ static MemBlock* arenaToBlock(Arena* a, uint32 idx) {
 static Arena* blockToArena(MemBlock* b) {
     return (Arena*) ((uint32) b & 0xfffff000);
 }
-
 
 static void* allocPhyAddr(PhysicalAddrPool* pap) {
     int bitIdx = bitMapScan(&pap->bitMap, 1);
@@ -265,7 +261,7 @@ void* getUserPages(uint32 pageCnt) {
 }
 
 void* getOnePage(PoolFlag pf, uint32 vaddr) {
-    ASSERT(vaddr%PG_SIZE==0)
+    ASSERT(vaddr % PG_SIZE == 0)
     PhysicalAddrPool* pap = pf == PF_KERNEL ? &kernelPap : &userPap;
     lockLock(&pap->lock);
     int32 bitIdx = -1;

@@ -50,4 +50,8 @@ void ps();
 
 int32 execv(const char* path, char* argv[16]);
 
+void exit(int32 status);
+
+int32 wait(int32* status);
+
 #endif

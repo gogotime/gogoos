@@ -111,26 +111,35 @@ int32 chdir(const char* pathName) {
     return syscall1(SYS_CHDIR, pathName);
 }
 
-int32 rmdir(const char* pathName){
+int32 rmdir(const char* pathName) {
     return syscall1(SYS_RMDIR, pathName);
 }
 
-DirEntry* readDir(Dir* dir){
+DirEntry* readDir(Dir* dir) {
     return (DirEntry*) syscall1(SYS_READDIR, dir);
 }
 
-void rewindDir(Dir* dir){
+void rewindDir(Dir* dir) {
     syscall1(SYS_REWINDDIR, dir);
 }
 
-int32 stat(const char* path, Stat* stat){
+int32 stat(const char* path, Stat* stat) {
     return syscall2(SYS_STAT, path, stat);
 }
 
-void ps(){
+void ps() {
     syscall0(SYS_PS);
 }
 
 int32 execv(const char* path, char* argv[16]) {
     return syscall2(SYS_EXECV, path, argv);
 }
+
+void exit(int32 status) {
+    syscall1(SYS_EXIT, status);
+}
+
+int32 wait(int32* status) {
+    return syscall1(SYS_WAIT, status);
+}
+

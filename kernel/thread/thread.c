@@ -16,7 +16,15 @@ List threadReadyList;
 List threadAllList;
 
 static ListElem* threadTag;
-Lock pidLock;
+
+uint8 pidBitMapStart[128] = {0};
+typedef struct {
+    BitMap pidBitMap;
+    uint32 pidStart;
+    Lock pidLock;
+} PidPool;
+
+PidPool pidPool;
 
 
 extern void switchTo(TaskStruct* cur, TaskStruct* next);
@@ -54,12 +62,43 @@ void schedule() {
     switchTo(cur, next);
 }
 
+static void pidPoolInit() {
+    pidPool.pidStart = 1;
+    pidPool.pidBitMap.startAddr = pidBitMapStart;
+    pidPool.pidBitMap.length = 128;
+    bitMapInit(&pidPool.pidBitMap);
+    lockInit(&pidPool.pidLock);
+}
+
 static uint32 allocatePid() {
-    static uint32 nextPid = 0;
-    lockLock(&pidLock);
-    nextPid++;
-    lockUnlock(&pidLock);
-    return nextPid;
+    lockLock(&pidPool.pidLock);
+    int32 bitIdx = bitMapScanAndSet(&pidPool.pidBitMap, 1, 1);
+    lockUnlock(&pidPool.pidLock);
+    return bitIdx + pidPool.pidStart;
+}
+
+static void releasePid(int32 pid) {
+    lockLock(&pidPool.pidLock);
+    int32 bitIdx = pid - pidPool.pidStart;
+    bitMapSet(&pidPool.pidBitMap, bitIdx, 0);
+    lockUnlock(&pidPool.pidLock);
+}
+
+static bool checkPid(ListElem* elem, int32 pid) {
+    TaskStruct* thread = elemToEntry(TaskStruct, allListTag, elem);
+    if (thread->pid == pid) {
+        return true;
+    }
+    return false;
+}
+
+TaskStruct* pidToThread(int32 pid) {
+    ListElem* elem = listTraversal(&threadAllList, checkPid, pid);
+    if (elem == NULL) {
+        return NULL;
+    }
+    TaskStruct* thread = elemToEntry(TaskStruct, allListTag, elem);
+    return thread;
 }
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg) {
@@ -146,6 +185,26 @@ void threadYield() {
     setIntrStatus(intrStatus);
 }
 
+void threadExit(TaskStruct* threadOver, bool needSchedule) {
+    disableIntr();
+    threadOver->status = TASK_DIED;
+    if (listElemExist(&threadReadyList, &threadOver->generalTag)) {
+        listRemove(&threadOver->generalTag);
+    }
+    if (threadOver->pageDir) {
+        freePage(PF_KERNEL, threadOver->pageDir, 1);
+    }
+    listRemove(&threadOver->allListTag);
+    if (threadOver != mainThread) {
+        freePage(PF_KERNEL, threadOver, 1);
+    }
+    releasePid(threadOver->pid);
+    if (needSchedule) {
+        schedule();
+        PANIC("threadExit:should not be here")
+    }
+}
+
 static void idleThreadFunc(void* unusedArg) {
     while (1) {
         threadBlock(TASK_BLOCKED);
@@ -200,7 +259,7 @@ static bool threadPrintFunc(ListElem* elem, int unusedArg) {
     memset(buf, ' ', 16);
     if (thread->parentPid == -1) {
         sysWrite(1, "NULL       ", 11);
-    }else{
+    } else {
         sprintk(buf, "%d", thread->parentPid);
         sysWrite(1, buf, 11);
     }
@@ -257,7 +316,7 @@ void threadInit() {
     putString("threadInit start\n");
     listInit(&threadAllList);
     listInit(&threadReadyList);
-    lockInit(&pidLock);
+    pidPoolInit();
     makeMainThread();
     idleThread = threadStart("idle", 1, idleThreadFunc, NULL);
     putString("threadInit done\n");

@@ -2,6 +2,7 @@
 #include "../memory.h"
 #include "fork.h"
 #include "exec.h"
+#include "wait_exit.h"
 #include "../../fs/fs.h"
 #include "../../lib/stdint.h"
 #include "../../lib/kernel/print.h"
@@ -38,5 +39,7 @@ void syscallInit() {
     syscallHandlerTable[SYS_STAT] = (uint32) &sysStat;
     syscallHandlerTable[SYS_PS] = (uint32) &sysPs;
     syscallHandlerTable[SYS_EXECV] = (uint32) &sysExecv;
+    syscallHandlerTable[SYS_EXIT] = (uint32) &sysExit;
+    syscallHandlerTable[SYS_WAIT] = (uint32) &sysWait;
     putString("syscallInit done");
 }

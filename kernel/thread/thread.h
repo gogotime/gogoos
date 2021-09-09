@@ -80,7 +80,7 @@ typedef struct {
 typedef struct {
     uint32* selfKnlStack;
     TaskStatus status;
-    uint32 pid;
+    int32 pid;
     uint32 priority;
     char name[16];
     uint32 ticks;
@@ -94,6 +94,7 @@ typedef struct {
     VirtualAddrPool vap;
     uint32 cwdIno;
     int32 parentPid;
+    int32 exitStatus;
     uint32 stackMagicNum;
 } TaskStruct;
 
@@ -111,6 +112,8 @@ typedef struct {
 
 TaskStruct* getCurrentThread();
 
+TaskStruct* pidToThread(int32 pid);
+
 TaskStruct* threadStart(char* name, uint32 priority, ThreadFunc function, void* funcArg);
 
 void threadCreate(TaskStruct* pcb, char* name, uint32 priority, ThreadFunc func, void* funcArg);
@@ -124,6 +127,8 @@ void threadUnblock(TaskStruct* pcb);
 void threadBlock(TaskStatus status);
 
 void threadYield();
+
+void threadExit(TaskStruct* threadOver, bool needSchedule);
 
 uint32 sysGetPid();
 

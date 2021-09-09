@@ -145,7 +145,8 @@ void myShell() {
             }else{
                 int32 pid = fork();
                 if (pid) {
-                    while (1);
+                    int32 status;
+                    wait(&status);
                 } else {
                     execv(finalPath, argv);
                 }

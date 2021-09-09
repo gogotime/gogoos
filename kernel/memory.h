@@ -41,6 +41,8 @@ void* allocPage(PoolFlag pf, uint32 pageCnt);
 
 void freePage(PoolFlag pf, void* virPageAddr, uint32 pgCnt);
 
+void freePhyAddr(uint32 phyPageAddr);
+
 void* getKernelPages(uint32 pageCnt);
 
 void* getUserPages(uint32 pageCnt);

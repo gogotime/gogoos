@@ -137,7 +137,7 @@ void myShell() {
         }else {
             char finalPath[MAX_PATH_LEN];
             makeClearAbsPath(argv[0], finalPath);
-            argv[0] = finalPath;
+//            argv[0] = finalPath;
             Stat fileStat;
             memset(&fileStat, 0, sizeof(Stat));
             if (stat(finalPath, &fileStat) == -1) {

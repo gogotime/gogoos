@@ -55,7 +55,7 @@ extern IDEChannel ideChannel[2];
 
 int main() {
     initAll();
-    uint32 fileSize = 9052;
+    uint32 fileSize = 9120;
     uint32 secCnt = DIV_ROUND_UP(fileSize, SECTOR_BYTE_SIZE);
     Disk* sda = &ideChannel[0].devices[0];
     void* buf = sysMalloc(secCnt * SECTOR_BYTE_SIZE);

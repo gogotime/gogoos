@@ -165,18 +165,20 @@ int32 sysExecv(const char* path, char* argv[16]) {
 //    cur->name[15] = 0;
 
     TaskStruct* cur = getCurrentThread();
-    IntrStack* procStack = (IntrStack*) (((uint32) cur) + PG_SIZE - sizeof(IntrStack));
-    procStack->edi = procStack->esi = procStack->ebp = procStack->espDummy = 0;
-    procStack->ebx = procStack->edx = procStack->ecx = procStack->eax = 0;
-    procStack->eip = (void*) entryPoint;
-//    procStack->esp = (void*) ((uint32) getOnePage(PF_USER, USER_STACK_VADDR) + PG_SIZE);
-    ASSERT(procStack->esp != NULL)
+    IntrStack* intrStack = (IntrStack*) (((uint32) cur) + PG_SIZE - sizeof(IntrStack));
+    intrStack->edi = intrStack->esi = intrStack->ebp = intrStack->espDummy = 0;
+    intrStack->edx = intrStack->eax = 0;
+    intrStack->ebx = argc;
+    intrStack->ecx = (uint32) argv;
+    intrStack->eip = (void*) entryPoint;
+    intrStack->esp = (void*)0xc0000000;
+    ASSERT(intrStack->esp != NULL)
 //    printk("eip:%x \n", procStack->eip);
 //    printk("esp:%x \n", procStack->esp);
     asm volatile ("movl %0,%%esp;"
                   "jmp intrExit;"
     :
-    :"g"(procStack)
+    :"g"(intrStack)
     :"memory");
     return 0;
 }

@@ -1,12 +1,13 @@
 #include "../lib/user/stdio.h"
 
-int main(){
+int main(int argc, char** argv) {
     printf("test1 from disk\n");
-//    asm volatile("movl 0,%eax;"
-//                 "movl 0,%ebx;"
-//                 "movl 0,%ecx;"
-//                 "movl 0,%edx;");
+    printf("argc:%d\n", argc);
+    int i = 0;
+    while (i < argc) {
+        printf("argc[%d]=%s\n", i, argv[i]);
+        i++;
+    }
     while (1);
     return 0;
-
 }

@@ -151,15 +151,7 @@ void myShell() {
                     execv(finalPath, argv);
                 }
             }
-            int32 argIdx = 0;
-            while (argIdx < argc) {
-                argv[argc] = NULL;
-                argIdx++;
-            }
-            printf("\n");
         }
-
-
     }
     PANIC("myShell:should not be here\n")
 }

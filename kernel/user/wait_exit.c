@@ -3,7 +3,7 @@
 #include "../global.h"
 #include "../../fs/fs.h"
 #include "../../lib/debug.h"
-
+#include "../../lib/kernel/stdio.h"
 extern List threadAllList;
 
 
@@ -40,7 +40,7 @@ static void releaseProgramResource(TaskStruct* thread) {
             pagePhyAddr = pde & 0xfffff000;
             freePhyAddr(pagePhyAddr);
         }
-        pteIdx++;
+        pdeIdx++;
     }
 
     uint32 bmpPgCnt = DIV_ROUND_UP((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8, PG_SIZE);
@@ -101,7 +101,6 @@ int32 sysWait(int32* status) {
 
 void sysExit(int32 status) {
     TaskStruct* childThread = getCurrentThread();
-
     childThread->status = status;
     if (childThread->parentPid == -1) {
         PANIC("sysExit: childThread->parentPid = -1")

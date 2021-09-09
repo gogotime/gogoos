@@ -42,6 +42,16 @@ int main(int argc, char** argv) {
 }
 
 ```
+```
+// 编译链接写盘
+// userprog/Makefile
+
+test1: echo
+	nasm -f elf32 ./crt/start.asm -o ./crt/start.o
+	clang -m32 -ffunction-sections -fdata-sections -fno-builtin -ffreestanding -o test1.o -c test1.c
+	ld -m elf_i386 -Ttext 0x100000 --gc-sections ./crt/start.o test1.o ../out/lib/string.o ../out/lib/user/stdio.o ../out/lib/user/syscall.o -o test1
+	dd if=test1 of=../c.img bs=512 count=300 seek=400 conv=notrunc
+```
 
 ```C
 // 从裸盘sda写到格式化盘sdb
@@ -77,5 +87,8 @@ int main(){
     
     ...
     
+}
+    
 ```
+
 ![img3](https://i.bmp.ovh/imgs/2021/09/1334b9d1a5e8b383.png)

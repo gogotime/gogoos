@@ -134,6 +134,8 @@ void myShell() {
             buildinWf(argc, argv);
         }else if (!strcmp("rf", argv[0])) {
             buildinRf(argc, argv);
+        }else if (!strcmp("cat", argv[0])) {
+            buildinRf(argc, argv);
         }else {
             char finalPath[MAX_PATH_LEN];
             makeClearAbsPath(argv[0], finalPath);

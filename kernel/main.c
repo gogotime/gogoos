@@ -85,30 +85,17 @@ int main() {
     return 0;
 }
 
-
-void testThread1(void* arg) {
-    while (1);
-}
-
 void init() {
     uint32 pid = fork();
     if (pid) {
-        while (1);
+        int status;
+        int childPid;
+        while (1) {
+            childPid = wait(&status);
+            printf("init wait child pid %d status %d\n", childPid, status);
+        }
     } else {
         myShell();
     }
-}
-
-
-void userProcess(void* arg) {
-    int32 pid = fork();
-    if (pid == -1) {
-        printf("fork error\n");
-    } else if (pid == 0) {
-        printf("i'm child, my pid is %d\n", getPid());
-
-    } else {
-        printf("i'm father, my pid is %d, my child's pid is %d\n", getPid(), pid);
-    }
-    while (1);
+    PANIC("shoule not be here")
 }

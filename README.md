@@ -1,4 +1,4 @@
-# PyroOS
+# GOGOOS
 &nbsp;&nbsp;&nbsp;&nbsp;个人娱乐项目，参照《操作系统真象还原》这本书</br>
 &nbsp;&nbsp;&nbsp;&nbsp;一个玩具操作系统，支持32位X86处理器，支持4GB虚拟内存</br>
 &nbsp;&nbsp;&nbsp;&nbsp;X86汇编器使用nasm，C编译器使用clang</br>

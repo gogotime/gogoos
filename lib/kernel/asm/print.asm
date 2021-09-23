@@ -43,7 +43,7 @@ sysClear:
 
     pop gs
     popad
-;    jmp $
+
     ret
 
 

@@ -87,6 +87,8 @@ loader_start:
     mov byte [gs:172],'M'
     mov byte [gs:173],0xA4
 
+    jmp $
+
 .mem_get_ok:
     mov [total_mem_bytes],edx
 
